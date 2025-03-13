@@ -124,13 +124,13 @@ if [[ $? -eq 0 ]]; then
     for url in $GITHUB_URLS; do
         script_name=$(basename $url)
         wget -q $url -O $EXTERNAL_SCRIPTS_DIR/$script_name
-        chmod +x $EXTERNAL_SCRIPTS_DIR/$script_name $CT_ID
+        chmod +x $EXTERNAL_SCRIPTS_DIR/$script_name
     done
 fi
 
 # Run scripts in LXC
 for script in $EXTERNAL_SCRIPTS_DIR/*.sh; do
-    echo "Running $(basename $script) on LXC $CT_ID..."
+    echo "Running $(basename $script $CT_ID) on LXC $CT_ID..."
     pct exec $CT_ID -- bash < "$script"
 done
 
