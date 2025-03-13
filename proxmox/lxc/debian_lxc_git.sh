@@ -131,21 +131,22 @@ fi
 # Run scripts in LXC
 for script in $EXTERNAL_SCRIPTS_DIR/*.sh; do
     echo "Running $(basename $script) on LXC $CT_ID..."
-    pct exec $CT_ID -- bash < "$script"
+    pct exec $CT_ID -- bash < "$script" "$CT_ID"
 done
 
 #remove leftover scripts
-#echo "Cleaning up script leftovers..."
-# Remove GitHub scripts
-#rm -f $EXTERNAL_SCRIPTS_DIR/$script_name
+echo "Cleaning up script leftovers..."
+
+#Remove GitHub scripts
+rm -f $EXTERNAL_SCRIPTS_DIR/$script_name
 
 # Check if the directory exists and is empty
-#if [ -d "$EXTERNAL_SCRIPTS_DIR" ] && [ -z "$(ls -A "$EXTERNAL_SCRIPTS_DIR")" ]; then
-#    echo "Directory $EXTERNAL_SCRIPTS_DIR is empty. Skipping deletion."
-#else
-#    echo "Removing directory $EXTERNAL_SCRIPTS_DIR..."
-#    rm -rf "$EXTERNAL_SCRIPTS_DIR"
-#fi
+if [ -d "$EXTERNAL_SCRIPTS_DIR" ] && [ -z "$(ls -A "$EXTERNAL_SCRIPTS_DIR")" ]; then
+    echo "Directory $EXTERNAL_SCRIPTS_DIR is empty. Skipping deletion."
+else
+    echo "Removing directory $EXTERNAL_SCRIPTS_DIR..."
+    rm -rf "$EXTERNAL_SCRIPTS_DIR"
+fi
 
 # Remove the installer script itself
 rm -- "$0"
