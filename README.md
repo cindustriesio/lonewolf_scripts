@@ -9,13 +9,12 @@ Run Everything with: bash -c "$(wget -qLO - https://whatevertheurlisongithub.com
 
 These are very much in early development, and I am not responsible for anything breaking. Use at your own risk.
 
-Currently Available:
+## Currently Available:
 
-Debian LXC install:
+### Debian LXC install:
+
+```
 bash -c "$(wget -qLO - https://raw.githubusercontent.com/cindustriesio/stand_alone_scripts/refs/heads/main/proxmox/lxc/debian_lxc_git.sh)"
-
-
-
-
+```
 
 Any questions or comments just ask!
