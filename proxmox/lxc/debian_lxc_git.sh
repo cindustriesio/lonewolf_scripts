@@ -124,7 +124,7 @@ if [[ $? -eq 0 ]]; then
     for url in $GITHUB_URLS; do
         script_name=$(basename $url)
         wget -q $url -O $EXTERNAL_SCRIPTS_DIR/$script_name
-        chmod +x $EXTERNAL_SCRIPTS_DIR/$script_name
+        chmod +x $EXTERNAL_SCRIPTS_DIR/$script_name $CT_ID
     done
 fi
 
