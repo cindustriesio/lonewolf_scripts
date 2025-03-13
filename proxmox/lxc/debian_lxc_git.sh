@@ -131,7 +131,7 @@ fi
 # Run scripts in LXC
 for script in $EXTERNAL_SCRIPTS_DIR/*.sh; do
     echo "Running $(basename $script) on LXC $CT_ID..."
-    pct exec $CT_ID -- bash < "$script" "$CT_ID"
+    pct exec $CT_ID -- bash < "$script_name" "$CT_ID"
 done
 
 #remove leftover scripts
