@@ -134,15 +134,21 @@ for script in $EXTERNAL_SCRIPTS_DIR/*.sh; do
     pct exec $CT_ID -- bash < "$script"
 done
 
-echo "LXC Container $CT_ID setup complete!"
-whiptail --title "Setup Complete" --msgbox "LXC Container $CT_ID setup is complete!" 8 50
-
 #remove leftover scripts
-echo "Cleaning up script leftovers..."
+#echo "Cleaning up script leftovers..."
 # Remove GitHub scripts
-rm -f $EXTERNAL_SCRIPTS_DIR/$script_name
+#rm -f $EXTERNAL_SCRIPTS_DIR/$script_name
+
+# Check if the directory exists and is empty
+if [ -d "$EXTERNAL_SCRIPTS_DIR" ] && [ -z "$(ls -A "$EXTERNAL_SCRIPTS_DIR")" ]; then
+    echo "Directory $EXTERNAL_SCRIPTS_DIR is empty. Skipping deletion."
+else
+    echo "Removing directory $EXTERNAL_SCRIPTS_DIR..."
+    rm -rf "$EXTERNAL_SCRIPTS_DIR"
+fi
 
 # Remove the installer script itself
 rm -- "$0"
 
-whiptail --title "All Cleaned" --msgbox "Root Scripts and Git Scripts from $CT_ID has been removed." 8 50
+echo "LXC Container $CT_ID setup complete!"
+whiptail --title "Setup Complete" --msgbox "LXC Container $CT_ID setup is complete!" 8 50
