@@ -1,18 +1,8 @@
 #!/bin/bash
 
 # Configuration
-
-# Ensure an LXC ID is provided
-if [ -z "$1" ]; then
-    echo "[ERROR] Usage: bash $0 <LXC_CONTAINER_ID>"
-    exit 1
-fi
-
-CT_ID=$1
-echo "Installing Plex on LXC $CT_ID..."
-
-#CTID="$1"  # Container ID passed as an argument
-#CONF_FILE="/etc/pve/lxc/${CTID}.conf"
+CTID="$1"  # Container ID passed as an argument
+CONF_FILE="/etc/pve/lxc/${CTID}.conf"
 
 # Logging Functions
 msg_info() {
@@ -26,16 +16,16 @@ msg_error() {
 }
 
 # Ensure CTID is provided
-#if [[ -z "$CTID" ]]; then
- #   msg_error "Usage: $0 <LXC_CONTAINER_ID>"
-  #  exit 1
-#fi
+if [[ -z "$CTID" ]]; then
+    msg_error "Usage: $0 <LXC_CONTAINER_ID>"
+    exit 1
+fi
 
 # Ensure the LXC container exists
-#if [[ ! -f "$CONF_FILE" ]]; then
- #   msg_error "LXC container with ID $CTID not found!"
-  #  exit 1
-#fi
+if [[ ! -f "$CONF_FILE" ]]; then
+    msg_error "LXC container with ID $CTID not found!"
+    exit 1
+fi
 
 msg_info "Detecting GPU Type..."
 
