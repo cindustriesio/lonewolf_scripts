@@ -136,3 +136,13 @@ done
 
 echo "LXC Container $CT_ID setup complete!"
 whiptail --title "Setup Complete" --msgbox "LXC Container $CT_ID setup is complete!" 8 50
+
+#remove leftover scripts
+echo "Cleaning up script leftovers..."
+# Remove GitHub scripts
+rm -f $EXTERNAL_SCRIPTS_DIR/$script_name
+
+# Remove the installer script itself
+rm -- "$0"
+
+whiptail --title "All Cleaned" --msgbox "Root Scripts and Git Scripts from $CT_ID has been removed." 8 50
