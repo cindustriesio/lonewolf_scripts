@@ -114,38 +114,39 @@ fi
 echo "Starting LXC container..."
 pct start $CT_ID
 
-# Fetch external scripts from GitHub
+# Ask whether to fetch scripts from GitHub
 USE_GITHUB=$(whiptail --title "External Scripts" --yesno "Do you want to fetch installation scripts from GitHub?" 8 50 3>&1 1>&2 2>&3)
 if [[ $? -eq 0 ]]; then
+    # Ask for GitHub script URLs
     GITHUB_URLS=$(whiptail --inputbox "Enter GitHub script URLs (space-separated):" 10 60 --title "GitHub Script Fetch" 3>&1 1>&2 2>&3)
     EXTERNAL_SCRIPTS_DIR="/root/lxc-scripts"
 
-    mkdir -p $EXTERNAL_SCRIPTS_DIR
+    # Create the directory if it doesn't exist
+    mkdir -p "$EXTERNAL_SCRIPTS_DIR"
+
+    # Download scripts from GitHub
     for url in $GITHUB_URLS; do
-        script_name=$(basename $url)
-        wget -q $url -O $EXTERNAL_SCRIPTS_DIR/$script_name
-        chmod +x $EXTERNAL_SCRIPTS_DIR/$script_name
+        script_name=$(basename "$url")
+        script_path="$EXTERNAL_SCRIPTS_DIR/$script_name"
+
+        # Download and make the script executable
+        wget -q "$url" -O "$script_path"
+        chmod +x "$script_path"
     done
 fi
 
-# Run scripts in LXC
-for script in $EXTERNAL_SCRIPTS_DIR/*.sh; do
-    echo "Running $(basename $script) on LXC $CT_ID..."
-    bash "$script_name" "$CT_ID"
-done
+# Run scripts on Proxmox (not inside LXC)
+if [ -d "$EXTERNAL_SCRIPTS_DIR" ] && [ "$(ls -A "$EXTERNAL_SCRIPTS_DIR"/*.sh 2>/dev/null)" ]; then
+    for script in "$EXTERNAL_SCRIPTS_DIR"/*.sh; do
+        echo "Running $(basename "$script") on Proxmox..."
+        bash "$script" "$CT_ID"
+    done
 
-#remove leftover scripts
-echo "Cleaning up script leftovers..."
-
-#Remove GitHub scripts
-rm -f $EXTERNAL_SCRIPTS_DIR/$script_name
-
-# Check if the directory exists and is empty
-if [ -d "$EXTERNAL_SCRIPTS_DIR" ] && [ -z "$(ls -A "$EXTERNAL_SCRIPTS_DIR")" ]; then
-    echo "Directory $EXTERNAL_SCRIPTS_DIR is empty. Skipping deletion."
-else
-    echo "Removing directory $EXTERNAL_SCRIPTS_DIR..."
+    # Optional: Clean up scripts after execution
     rm -rf "$EXTERNAL_SCRIPTS_DIR"
+    echo "Removed downloaded scripts."
+else
+    echo "No scripts found in $EXTERNAL_SCRIPTS_DIR. Skipping execution."
 fi
 
 # Remove the installer script itself
