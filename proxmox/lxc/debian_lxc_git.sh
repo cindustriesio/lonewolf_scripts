@@ -41,8 +41,10 @@ Only use this if you fully understand the security risks!" \
 3>&1 1>&2 2>&3)
 
 # Check if user pressed "Cancel"
-if [[ $? -ne 0 ]]; then
-    whiptail --title "Operation Cancelled" --msgbox "Script execution was cancelled." 8 50
+EXIT_STATUS=$?
+# Exit on Cancel
+if [ $EXIT_STATUS -ne 0 ]; then
+    echo "User cancelled. Exiting..."
     exit 1
 fi
 
@@ -66,31 +68,56 @@ for s in $storage_options; do
 done
 
 # GUI for LXC configuration
-CT_ID=$(whiptail --inputbox "Enter Container ID (e.g., 100):" 8 50 100 --title "LXC Configuration" 3>&1 1>&2 2>&3)
+
+# Function to find the next available LXC ID (starting from 101)
+get_next_lxc_id() {
+    local START_ID=101
+    local NEXT_ID=$START_ID
+
+    while pct list | awk 'NR>1 {print $1}' | grep -q "^$NEXT_ID$"; do
+        ((NEXT_ID++))
+    done
+
+    echo "$NEXT_ID"
+}
+
+# Get the next available LXC ID
+AUTO_CT_ID=$(get_next_lxc_id)
+
+# Prompt the user with the default auto-selected LXC ID
+CT_ID=$(whiptail --inputbox "Enter Container ID (default: $AUTO_CT_ID):" 8 50 "$AUTO_CT_ID" --title "LXC Configuration" 3>&1 1>&2 2>&3)
 # Check if user pressed "Cancel"
-if [[ $? -ne 0 ]]; then
-    whiptail --title "Operation Cancelled" --msgbox "Script execution was cancelled." 8 50
+EXIT_STATUS=$?
+# Exit on Cancel
+if [ $EXIT_STATUS -ne 0 ]; then
+    echo "User cancelled. Exiting..."
     exit 1
 fi
 
 HOSTNAME=$(whiptail --inputbox "Enter Hostname:" 8 50 "debian-lxc" --title "LXC Configuration" 3>&1 1>&2 2>&3)
 # Check if user pressed "Cancel"
-if [[ $? -ne 0 ]]; then
-    whiptail --title "Operation Cancelled" --msgbox "Script execution was cancelled." 8 50
+EXIT_STATUS=$?
+# Exit on Cancel
+if [ $EXIT_STATUS -ne 0 ]; then
+    echo "User cancelled. Exiting..."
     exit 1
 fi
 
 DISK_SIZE=$(whiptail --inputbox "Enter Disk Size (in GB):" 8 50 4 --title "LXC Configuration" 3>&1 1>&2 2>&3)
 # Check if user pressed "Cancel"
-if [[ $? -ne 0 ]]; then
-    whiptail --title "Operation Cancelled" --msgbox "Script execution was cancelled." 8 50
+EXIT_STATUS=$?
+# Exit on Cancel
+if [ $EXIT_STATUS -ne 0 ]; then
+    echo "User cancelled. Exiting..."
     exit 1
 fi
 
 MEMORY=$(whiptail --inputbox "Enter Memory Size (in MB):" 8 50 512 --title "LXC Configuration" 3>&1 1>&2 2>&3)
 # Check if user pressed "Cancel"
-if [[ $? -ne 0 ]]; then
-    whiptail --title "Operation Cancelled" --msgbox "Script execution was cancelled." 8 50
+EXIT_STATUS=$?
+# Exit on Cancel
+if [ $EXIT_STATUS -ne 0 ]; then
+    echo "User cancelled. Exiting..."
     exit 1
 fi
 
@@ -100,8 +127,11 @@ STORAGE=$(whiptail --title "Select Storage" --menu \
 $STORAGE_SELECTION 3>&1 1>&2 2>&3)
 
 # Check if user pressed "Cancel"
-if [[ $? -ne 0 ]]; then
-    whiptail --title "Operation Cancelled" --msgbox "Script execution was cancelled." 8 50
+# Check if user pressed "Cancel"
+EXIT_STATUS=$?
+# Exit on Cancel
+if [ $EXIT_STATUS -ne 0 ]; then
+    echo "User cancelled. Exiting..."
     exit 1
 fi
 
@@ -144,9 +174,8 @@ fi
 
 # Confirm settings
 whiptail --title "Confirm Settings" --yesno "Container ID: $CT_ID\nHostname: $HOSTNAME\nDebian Version: $SELECTED_TEMPLATE\nDisk Size: ${DISK_SIZE}G\nMemory: ${MEMORY}MB\nStorage: $STORAGE\nNetwork: $NET_TYPE\nStatic IP: $IP_ADDR\nGateway: $GATEWAY\nDNS: ${DNS_SERVERS:-Auto}\n\nProceed?" 20 60
-# Check if user pressed "Cancel"
-if [[ $? -ne 0 ]]; then
-    whiptail --title "Operation Cancelled" --msgbox "Script execution was cancelled." 8 50
+if [ $? -ne 0 ]; then
+    echo "Aborted."
     exit 1
 fi
 
