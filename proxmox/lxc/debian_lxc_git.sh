@@ -30,16 +30,80 @@ if [[ -z "$SELECTED_TEMPLATE" ]]; then
     exit 1
 fi
 
-# Get storage options
+# Ask the user if the LXC should be privileged or unprivileged
+PRIVILEGED_OPTION=$(whiptail --title "LXC Privilege Mode" --radiolist \
+"Most LXC containers are unprivileged.\n\n\
+⚠️ WARNING: Privileged containers run with elevated permissions.\n\
+Only use this if you fully understand the security risks!" \
+15 60 2 \
+"Unprivileged" "" ON \
+"Privileged" "" OFF \
+3>&1 1>&2 2>&3)
+
+# Check if user pressed "Cancel"
+if [[ $? -ne 0 ]]; then
+    whiptail --title "Operation Cancelled" --msgbox "Script execution was cancelled." 8 50
+    exit 1
+fi
+
+# Determine Privileged Flag
+if [[ "$PRIVILEGED_OPTION" == "Privileged" ]]; then
+    PRIVILEGED_FLAG="1"
+    FEATURES="nesting=1,fuse=1"  # Exclude keyctl
+else
+    PRIVILEGED_FLAG="0"
+    FEATURES="nesting=1,keyctl=1,fuse=1"  # Include keyctl for unprivileged containers
+fi
+
+# Get available storage options
 storage_options=$(pvesm status | awk 'NR>1 {print $1}' | xargs)
 default_storage=$(echo $storage_options | awk '{print $1}')
 
+# Convert storage options into a format suitable for whiptail menu
+STORAGE_SELECTION=""
+for s in $storage_options; do
+    STORAGE_SELECTION+="$s Storage  "  # Correctly format without "off"
+done
+
 # GUI for LXC configuration
 CT_ID=$(whiptail --inputbox "Enter Container ID (e.g., 100):" 8 50 100 --title "LXC Configuration" 3>&1 1>&2 2>&3)
+# Check if user pressed "Cancel"
+if [[ $? -ne 0 ]]; then
+    whiptail --title "Operation Cancelled" --msgbox "Script execution was cancelled." 8 50
+    exit 1
+fi
+
 HOSTNAME=$(whiptail --inputbox "Enter Hostname:" 8 50 "debian-lxc" --title "LXC Configuration" 3>&1 1>&2 2>&3)
+# Check if user pressed "Cancel"
+if [[ $? -ne 0 ]]; then
+    whiptail --title "Operation Cancelled" --msgbox "Script execution was cancelled." 8 50
+    exit 1
+fi
+
 DISK_SIZE=$(whiptail --inputbox "Enter Disk Size (in GB):" 8 50 4 --title "LXC Configuration" 3>&1 1>&2 2>&3)
+# Check if user pressed "Cancel"
+if [[ $? -ne 0 ]]; then
+    whiptail --title "Operation Cancelled" --msgbox "Script execution was cancelled." 8 50
+    exit 1
+fi
+
 MEMORY=$(whiptail --inputbox "Enter Memory Size (in MB):" 8 50 512 --title "LXC Configuration" 3>&1 1>&2 2>&3)
-STORAGE=$(whiptail --menu "Select Storage:" 15 50 5 $(for s in $storage_options; do echo "$s [X]"; done) --default-item "$default_storage" 3>&1 1>&2 2>&3)
+# Check if user pressed "Cancel"
+if [[ $? -ne 0 ]]; then
+    whiptail --title "Operation Cancelled" --msgbox "Script execution was cancelled." 8 50
+    exit 1
+fi
+
+# GUI for selecting storage
+STORAGE=$(whiptail --title "Select Storage" --menu \
+"Choose where to store the LXC container:" 20 60 10 \
+$STORAGE_SELECTION 3>&1 1>&2 2>&3)
+
+# Check if user pressed "Cancel"
+if [[ $? -ne 0 ]]; then
+    whiptail --title "Operation Cancelled" --msgbox "Script execution was cancelled." 8 50
+    exit 1
+fi
 
 # Password input with confirmation
 while true; do
@@ -80,8 +144,9 @@ fi
 
 # Confirm settings
 whiptail --title "Confirm Settings" --yesno "Container ID: $CT_ID\nHostname: $HOSTNAME\nDebian Version: $SELECTED_TEMPLATE\nDisk Size: ${DISK_SIZE}G\nMemory: ${MEMORY}MB\nStorage: $STORAGE\nNetwork: $NET_TYPE\nStatic IP: $IP_ADDR\nGateway: $GATEWAY\nDNS: ${DNS_SERVERS:-Auto}\n\nProceed?" 20 60
-if [ $? -ne 0 ]; then
-    echo "Aborted."
+# Check if user pressed "Cancel"
+if [[ $? -ne 0 ]]; then
+    whiptail --title "Operation Cancelled" --msgbox "Script execution was cancelled." 8 50
     exit 1
 fi
 
@@ -104,6 +169,8 @@ pct create $CT_ID local:vztmpl/$SELECTED_TEMPLATE \
     -memory $MEMORY \
     -password $PASSWORD \
     -net0 "name=eth0,bridge=vmbr0,ip=$IP_ADDR$( [[ -n "$GATEWAY" ]] && echo ",gw=$GATEWAY")"
+    -features $FEATURES \
+    -unprivileged $PRIVILEGED_FLAG
 
 # Apply DNS settings if set
 if [[ -n "$DNS_SERVERS" ]]; then
