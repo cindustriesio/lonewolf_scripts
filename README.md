@@ -3,7 +3,7 @@
 These scripts are stand alone and are designed to be that way.
 They are made for Proxmox!
 
-They are open and available for review, everything is as simple as they need to be to ran successfully.
+They are open and available for review, everything is as simple as they need to be to run successfully.
 
 Run Everything with: bash -c "$(wget -qLO - https://whatevertheurlisongithub.com)"
 
