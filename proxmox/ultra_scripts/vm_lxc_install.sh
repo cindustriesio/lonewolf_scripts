@@ -90,6 +90,7 @@ if [[ "$CHOSEN_TYPE" == "VM" ]]; then
     qm start $INSTANCE_ID
     whiptail --title "VM Created" --msgbox "VM ID $INSTANCE_ID has been created and started!" 8 50
 fi
+exit 0
 
 #LXC Creation
 if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
@@ -143,26 +144,26 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
         exit 1
     fi
 
-# Confirm settings
-whiptail --title "Confirm Settings" --yesno "Container ID: $INSTANCE_ID\nHostname: $INSTANCE_NAME\nDebian Version: $SELECTED_TEMPLATE\nDisk Size: ${DISK_SIZE}G\nMemory: ${MEMORY}MB\nStorage: $STORAGE\nNetwork: $NET_TYPE\nStatic IP: $IP_ADDR\nGateway: $GATEWAY\nDNS: ${DNS_SERVERS:-Auto}\n\nProceed?" 20 60
-if [ $? -ne 0 ]; then
+    # Confirm settings
+    whiptail --title "Confirm Settings" --yesno "Container ID: $INSTANCE_ID\nHostname: $INSTANCE_NAME\nDebian Version: $SELECTED_TEMPLATE\nDisk Size: ${DISK_SIZE}G\nMemory: ${MEMORY}MB\nStorage: $STORAGE\nNetwork: $NET_TYPE\nStatic IP: $IP_ADDR\nGateway: $GATEWAY\nDNS: ${DNS_SERVERS:-Auto}\n\nProceed?" 20 60
+    if [ $? -ne 0 ]; then
     echo "Aborted."
     exit 1
-fi
+    fi
 
-# Check if template exists locally, download if missing
-if ! pveam list local | grep -q "$TEMPLATE"; then
+    # Check if template exists locally, download if missing
+    if ! pveam list local | grep -q "$TEMPLATE"; then
     echo "Template $TEMPLATE not found locally. Downloading..."
     pveam download local $TEMPLATE
     if [[ $? -ne 0 ]]; then
-        echo "Failed to download $TEMPLATE. Exiting."
-        exit 1
+    echo "Failed to download $TEMPLATE. Exiting."
+    exit 1
     fi
-fi
+    fi
 
-# Create LXC container
-echo "Creating LXC container..."
-pct create $INSTANCE_ID local:vztmpl/$TEMPLATE \
+    # Create LXC container
+    echo "Creating LXC container..."
+    pct create $INSTANCE_ID local:vztmpl/$TEMPLATE \
     -hostname $INSTANCE_NAME \
     -storage $STORAGE \
     -rootfs ${STORAGE}:${DISK_SIZE} \
@@ -172,13 +173,13 @@ pct create $INSTANCE_ID local:vztmpl/$TEMPLATE \
     -features keyctl=$LXC_KEYCTL \
     -unprivileged $LXC_PRIV
 
-echo "Starting LXC container..."
-pct start $INSTANCE_ID
+    echo "Starting LXC container..."
+    pct start $INSTANCE_ID
 
     # Ask whether to fetch scripts from GitHub
     USE_GITHUB=$(whiptail --title "External Scripts" --yesno "Do you want to fetch installation scripts from GitHub?" 8 50 3>&1 1>&2 2>&3)
     if [[ $? -eq 0 ]]; then
-    
+
     # Ask for GitHub script URLs
     GITHUB_URLS=$(whiptail --inputbox "Enter GitHub script URLs (space-separated):" 10 60 --title "GitHub Script Fetch" 3>&1 1>&2 2>&3)
     EXTERNAL_SCRIPTS_DIR="/root/lxc-scripts"
@@ -216,3 +217,5 @@ pct start $INSTANCE_ID
 
     echo "LXC Container $INSTANCE_ID setup complete!"
     whiptail --title "Setup Complete" --msgbox "LXC Container $INSTANCE_ID setup is complete!" 8 50
+    fi
+exit 0
