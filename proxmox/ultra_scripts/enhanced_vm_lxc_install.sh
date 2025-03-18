@@ -1,6 +1,6 @@
 #!/bin/bash
 # Description: Proxmox LXC or VM Creation Script with Fixes
-# Version: 0.3
+# Version: 0.4
 # Created by: Clark Industries IO
 
 # Ensure whiptail is installed
@@ -19,17 +19,19 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 
-# Function to find next available LXC/VM ID
+# Function to find the next available ID (starting from 101)
 get_next_id() {
     local START_ID=101
     local NEXT_ID=$START_ID
-    while pvesh get /cluster/resources --type vm | jq -r '.[].vmid' | grep -q "^$NEXT_ID$"; do
+
+    while pct list | awk 'NR>1 {print $1}' | grep -q "^$NEXT_ID$"; do
         ((NEXT_ID++))
     done
+
     echo "$NEXT_ID"
 }
 
-# Get available instance ID
+# Get the next available ID
 AUTO_ID=$(get_next_id)
 INSTANCE_ID=$(whiptail --inputbox "Enter Instance ID (default: $AUTO_ID):" 8 50 "$AUTO_ID" --title "$CHOSEN_TYPE Configuration" 3>&1 1>&2 2>&3)
 if [[ $? -ne 0 ]]; then exit 1; fi
@@ -82,7 +84,7 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
     pveam update > /dev/null
     DISTRO=$(whiptail --menu "Choose LXC Base OS:" 15 50 2 "Debian" "Use a Debian template" "Ubuntu" "Use an Ubuntu template" 3>&1 1>&2 2>&3)
     TEMPLATE_LIST=$(pveam available | grep -i "$DISTRO" | awk '{print $2}')
-    TEMPLATE=$(whiptail --menu "Select a $DISTRO template:" 15 60 6 $(for t in $TEMPLATE_LIST; do echo "$t [X]"; done) 3>&1 1>&2 2>&3)
+    TEMPLATE=$(whiptail --menu "Select a $DISTRO template:" 15 100 6 $(for t in $TEMPLATE_LIST; do echo "$t [X]"; done) 3>&1 1>&2 2>&3)
     
     PRIVILEGED=$(whiptail --yesno "Enable Privileged Mode? Most LXCs are unprivileged." 12 50 --title "LXC Privileged Mode" 3>&1 1>&2 2>&3)
     [[ $? -eq 0 ]] && LXC_PRIV="1" || LXC_PRIV="0"
