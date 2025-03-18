@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Check if whiptail is installed
+if ! command -v whiptail &> /dev/null; then
+    echo "Whiptail is required but not installed. Install it using: apt-get install whiptail"
+    exit 1
+fi
+
 # Configuration
 CTID="$1"  # Container ID passed as an argument
 CONF_FILE="/etc/pve/lxc/${CTID}.conf"
@@ -24,6 +30,13 @@ fi
 # Ensure the LXC container exists
 if [[ ! -f "$CONF_FILE" ]]; then
     msg_error "LXC container with ID $CTID not found!"
+    exit 1
+fi
+
+# Check if user still wants to install app
+whiptail --title "Confirm Install" --yesno "Confirm you wish to install Plex in $CT_ID?" 15 50
+if [ $? -ne 0 ]; then
+    echo "Aborted."
     exit 1
 fi
 
