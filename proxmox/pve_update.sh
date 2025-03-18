@@ -105,6 +105,15 @@ apt-get clean
 # completed update confirmation
 whiptail --title "Update Complete" --msgbox "Proxmox has been from '$REPO_CHOICE'.\nPackages updated successfully!" 10 60
 
-echo "Yay, you did it! Rebooting in 10 seconds..."
+# Check if a reboot is required
+if [ -f /var/run/reboot-required ]; then
+whiptail --title "Reboot Required" --yesno "A system reboot is required to complete the updates. Do you want to reboot now?" 10 60
+
+# Check if the user selected "Yes"
+if [[ $? -eq 0 ]]; then
+echo "Rebooting in 10 seconds..."
 sleep 10
 reboot
+else
+echo "Reboot canceled by user. Update completed without reboot."
+fi
