@@ -1,5 +1,8 @@
-#!/bin/bash
-# Proxmox LXC setup script for Ubuntu
+# !/bin/bash
+# Description: Proxmox LXC setup script for Ubuntu with optional GitHub script fetching
+# Tested: Proxmox VE 8.0+ (Bookworm)
+# Version: 1.0
+# Author: Clark Industries IO
 
 # Check if whiptail is installed
 if ! command -v whiptail &> /dev/null; then

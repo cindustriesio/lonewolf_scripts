@@ -1,4 +1,11 @@
-#!/bin/bash
+# !/bin/bash
+# Description: Plex Media Server Installation Script with Hardware Acceleration
+# Supported GPUs: Intel (Quick Sync), AMD (VA-API), NVIDIA (NVENC)
+# Config: Plex will be configured to use hardware acceleration for transcoding.
+# Config: Plex will be installed in a privileged LXC container.
+# Tested: Proxmox VE 8.0+ (Bookworm)
+# Version: 1.0
+# Author: Clark Industries IO
 
 # Check if whiptail is installed
 if ! command -v whiptail &> /dev/null; then

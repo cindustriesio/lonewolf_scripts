@@ -1,4 +1,8 @@
-#!/bin/bash
+# !/bin/bash
+# Description: Update selected LXC containers on Proxmox VE
+# Tested: Proxmox VE 8.0+ (Bookworm)
+# Version: 1.0
+# Author: Clark Industries IO
 
 # Check if whiptail is installed
 if ! command -v whiptail &> /dev/null; then
