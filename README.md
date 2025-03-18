@@ -12,17 +12,24 @@ These are very much in early development, and I am not responsible for anything 
 ## Currently Available:
 
 ### LXC installs:
+Run these to make a highly customizable LXC on Proxmox.
 
-Debian:
+#### Debian:
 ```
 bash -c "$(wget -qLO - https://raw.githubusercontent.com/cindustriesio/stand_alone_scripts/refs/heads/main/proxmox/lxc/debian_lxc_git.sh)"
 ```
 
-Ubuntu:
+#### Ubuntu:
 ```
 bash -c "$(wget -qLO - https://raw.githubusercontent.com/cindustriesio/stand_alone_scripts/refs/heads/main/proxmox/lxc/ubuntu_lxc_git.sh)"
 ```
 
 You can inject whatever script at the end to install applications into the newly created LXC. Just copy past the github install script into it.
+
+### LXC update:
+This an update script to select multiple LXCs at once for updating.
+```
+bash -c "$(wget -qLO - https://raw.githubusercontent.com/cindustriesio/stand_alone_scripts/refs/heads/main/proxmox/lxc/lxc_update_selectable.sh)"
+```
 
 Any questions or comments just ask! I am new to git, and this is a learning experience while trying to help the community.
