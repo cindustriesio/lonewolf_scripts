@@ -126,9 +126,6 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
     rm -rf "$EXTERNAL_SCRIPTS_DIR"
     fi
     echo "Removed downloaded scripts."
-
-    # Remove the installer script itself
-    rm -- "$0"
 fi
 
 # VM Creation
