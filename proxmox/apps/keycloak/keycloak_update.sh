@@ -1,4 +1,7 @@
 #!/bin/bash
+# Description: Update Keycloak to the latest version
+# Version: 1.0
+# Created by: Clark Industries IO
 
 # Set variables
 KEYCLOAK_DIR="/opt/keycloak"

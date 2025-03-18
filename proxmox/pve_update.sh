@@ -5,7 +5,7 @@
 # This script is intended for use on Proxmox VE installations.
 # Tested on Proxmox VE 8.0+ (Bookworm)
 # Version: 1.1
-# Author: Clark Industries IO
+# Created By: Clark Industries IO
 
 # Ensure the script is run as root
 if [ "$EUID" -ne 0 ]; then

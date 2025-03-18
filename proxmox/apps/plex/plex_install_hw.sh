@@ -5,7 +5,7 @@
 # Config: Plex will be installed in a privileged LXC container.
 # Tested: Proxmox VE 8.0+ (Bookworm)
 # Version: 1.0
-# Author: Clark Industries IO
+# Created by: Clark Industries IO
 
 # Check if whiptail is installed
 if ! command -v whiptail &> /dev/null; then
