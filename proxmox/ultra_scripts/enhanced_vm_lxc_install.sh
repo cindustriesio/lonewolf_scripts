@@ -69,7 +69,7 @@ if [[ "$CHOSEN_TYPE" == "VM" ]]; then
     ISO_IMAGES=$(ls /var/lib/vz/template/iso | xargs)
     DEFAULT_ISO=$(echo "$ISO_IMAGES" | awk '{print $1}')
     ISO=$(whiptail --menu "Select ISO Image:" 15 60 5 $(for i in $ISO_IMAGES; do echo "$i [X]"; done) --default-item "$DEFAULT_ISO" 3>&1 1>&2 2>&3)
-    if [[ $? -ne 0 ]]; then exit 1; fi
+    if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
     
     qm create $INSTANCE_ID --name $INSTANCE_NAME --memory $MEMORY --net0 virtio,bridge=vmbr0,$NET_CONFIG \
         --ostype l26 --cdrom local:iso/$ISO --scsihw virtio-scsi-pci --boot c --agent 1 \
@@ -82,16 +82,20 @@ fi
 if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
     pveam update > /dev/null
     DISTRO=$(whiptail --menu "Choose LXC Base OS:" 15 50 2 "Debian" "Use a Debian template" "Ubuntu" "Use an Ubuntu template" 3>&1 1>&2 2>&3)
+    if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
     TEMPLATE_LIST=$(pveam available | grep -i "$DISTRO" | awk '{print $2}')
     TEMPLATE=$(whiptail --menu "Select a $DISTRO template:" 30 110 6 $(for t in $TEMPLATE_LIST; do echo "$t _"; done) 3>&1 1>&2 2>&3)
-    
+    if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
+
     PRIVILEGED=$(whiptail --yesno "Enable Privileged Mode? Most LXCs are unprivileged." 12 50 --title "LXC Privileged Mode" 3>&1 1>&2 2>&3)
     [[ $? -eq 0 ]] && LXC_PRIV="1" || LXC_PRIV="0"
     [[ "$LXC_PRIV" == "0" ]] && LXC_KEYCTL="on" || LXC_KEYCTL="off"
     
     while true; do
         PASSWORD=$(whiptail --passwordbox "Enter Root Password:" 8 50 --title "LXC Configuration" 3>&1 1>&2 2>&3)
+        if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
         CONFIRM_PASSWORD=$(whiptail --passwordbox "Confirm Root Password:" 8 50 --title "LXC Configuration" 3>&1 1>&2 2>&3)
+        if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
         if [[ "$PASSWORD" == "$CONFIRM_PASSWORD" ]]; then
             break
         else
@@ -100,10 +104,9 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
     done
     pct create $INSTANCE_ID local:vztmpl/$TEMPLATE -hostname $INSTANCE_NAME -storage $STORAGE -rootfs ${STORAGE}:${DISK_SIZE} -memory $MEMORY -password $PASSWORD -net0 name=eth0,bridge=vmbr0,$NET_CONFIG -features keyctl=$LXC_KEYCTL -unprivileged $LXC_PRIV
     pct start $INSTANCE_ID
-    whiptail --title "LXC Created" --msgbox "LXC Container $INSTANCE_ID has been created and started!" 8 50
     
     # Ask whether to fetch scripts from GitHub
-    USE_GITHUB=$(whiptail --title "External Scripts" --yesno "Do you want to fetch installation scripts from GitHub?" 8 50 3>&1 1>&2 2>&3)
+    USE_GITHUB=$(whiptail --title "External Scripts" --yesno "Do you want to fetch additional scripts from GitHub?" 8 50 3>&1 1>&2 2>&3)
         if [[ $? -eq 0 ]]; then
             # Ask for GitHub script URLs
         GITHUB_URLS=$(whiptail --inputbox "Enter GitHub script URLs (space-separated):" 10 60 --title "GitHub Script Fetch" 3>&1 1>&2 2>&3)
@@ -136,5 +139,6 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
         else
         echo "No scripts found in $EXTERNAL_SCRIPTS_DIR. Skipping execution."
         fi
+    whiptail --title "LXC Created" --msgbox "LXC Container $INSTANCE_ID has been created and started!" 8 50
 fi
 exit 0
