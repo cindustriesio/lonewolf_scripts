@@ -130,7 +130,7 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
         if [ -d "$EXTERNAL_SCRIPTS_DIR" ] && [ "$(ls -A "$EXTERNAL_SCRIPTS_DIR"/*.sh 2>/dev/null)" ]; then
         for script in "$EXTERNAL_SCRIPTS_DIR"/*.sh; do
         echo "Running $(basename "$script") on Proxmox..."
-        bash "$script" "$CT_ID"
+        bash "$script" "$INSTANCE_ID"
         done
 
         # Optional: Clean up scripts after execution
