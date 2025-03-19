@@ -85,7 +85,15 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
     [[ $? -eq 0 ]] && LXC_PRIV="1" || LXC_PRIV="0"
     [[ "$LXC_PRIV" == "0" ]] && LXC_KEYCTL="on" || LXC_KEYCTL="off"
     
-    PASSWORD=$(whiptail --passwordbox "Enter Root Password:" 8 50 --title "LXC Configuration" 3>&1 1>&2 2>&3)
+    while true; do
+        PASSWORD=$(whiptail --passwordbox "Enter Root Password:" 8 50 --title "LXC Configuration" 3>&1 1>&2 2>&3)
+        CONFIRM_PASSWORD=$(whiptail --passwordbox "Confirm Root Password:" 8 50 --title "LXC Configuration" 3>&1 1>&2 2>&3)
+        if [[ "$PASSWORD" == "$CONFIRM_PASSWORD" ]]; then
+            break
+        else
+            whiptail --title "Error" --msgbox "Passwords do not match. Please try again." 8 50
+        fi
+    done
     pct create $INSTANCE_ID local:vztmpl/$TEMPLATE -hostname $INSTANCE_NAME -storage $STORAGE -rootfs ${STORAGE}:${DISK_SIZE} -memory $MEMORY -password $PASSWORD -net0 name=eth0,bridge=vmbr0,$NET_CONFIG -features keyctl=$LXC_KEYCTL -unprivileged $LXC_PRIV
     pct start $INSTANCE_ID
     whiptail --title "LXC Created" --msgbox "LXC Container $INSTANCE_ID has been created and started!" 8 50
