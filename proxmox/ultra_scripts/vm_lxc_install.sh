@@ -20,20 +20,8 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 
-# Function to find the next available ID (starting from 101)
-get_next_id() {
-    local START_ID=101
-    local NEXT_ID=$START_ID
-
-    while pct list | awk 'NR>1 {print $1}' | grep -q "^$NEXT_ID$"; do
-        ((NEXT_ID++))
-    done
-
-    echo "$NEXT_ID"
-}
-
 # Get the next available ID
-AUTO_ID=$(get_next_id)
+AUTO_ID=$(pvesh get /cluster/nextid)
 # Get common settings
 INSTANCE_ID=$(whiptail --inputbox "Enter Instance ID (default: $AUTO_ID):" 8 50 "$AUTO_ID" --title "$CHOSEN_TYPE Configuration" 3>&1 1>&2 2>&3)
 if [[ $? -ne 0 ]]; then exit 1; fi
@@ -205,11 +193,10 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
     done
 
     # Optional: Clean up scripts after execution
+    if [ "$(ls -A "$EXTERNAL_SCRIPTS_DIR"/*.sh 2>/dev/null)" ]; then
     rm -rf "$EXTERNAL_SCRIPTS_DIR"
-    echo "Removed downloaded scripts."
-    else
-    echo "No scripts found in $EXTERNAL_SCRIPTS_DIR. Skipping execution."
     fi
+    echo "Removed downloaded scripts."
 
     # Remove the installer script itself
     rm -- "$0"

@@ -73,18 +73,6 @@ done
 
 # GUI for LXC configuration
 
-# Function to find the next available LXC ID (starting from 101)
-get_next_lxc_id() {
-    local START_ID=101
-    local NEXT_ID=$START_ID
-
-    while pct list | awk 'NR>1 {print $1}' | grep -q "^$NEXT_ID$"; do
-        ((NEXT_ID++))
-    done
-
-    echo "$NEXT_ID"
-}
-
 # Get the next available LXC ID
 AUTO_CT_ID=$(pvesh get /cluster/nextid)
 
@@ -130,7 +118,6 @@ STORAGE=$(whiptail --title "Select Storage" --menu \
 "Choose where to store the LXC container:" 20 60 10 \
 $STORAGE_SELECTION 3>&1 1>&2 2>&3)
 
-# Check if user pressed "Cancel"
 # Check if user pressed "Cancel"
 EXIT_STATUS=$?
 # Exit on Cancel
