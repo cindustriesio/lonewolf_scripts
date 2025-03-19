@@ -42,7 +42,7 @@ if [[ $? -ne 0 ]]; then exit 1; fi
 # Select Storage
 STORAGE_OPTIONS=$(pvesm status | awk 'NR>1 {print $1}')
 DEFAULT_STORAGE=$(echo "$STORAGE_OPTIONS" | awk '{print $1}')
-STORAGE=$(whiptail --menu "Select Storage:" 15 50 5 $(for s in $STORAGE_OPTIONS; do echo "$s [X]"; done) --default-item "$DEFAULT_STORAGE" 3>&1 1>&2 2>&3)
+STORAGE=$(whiptail --menu "Select Storage:" 15 50 5 $(for s in $STORAGE_OPTIONS; do echo "$s [ ]"; done) --default-item "$DEFAULT_STORAGE" 3>&1 1>&2 2>&3)
 if [[ $? -ne 0 ]]; then exit 1; fi
 
 # Network Configuration
@@ -78,13 +78,22 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
     pveam update > /dev/null
     DISTRO=$(whiptail --menu "Choose LXC Base OS:" 15 50 2 "Debian" "Use a Debian template" "Ubuntu" "Use an Ubuntu template" 3>&1 1>&2 2>&3)
     TEMPLATE_LIST=$(pveam available | grep -i "$DISTRO" | awk '{print $2}')
-    TEMPLATE=$(whiptail --menu "Select a $DISTRO template:" 15 100 6 $(for t in $TEMPLATE_LIST; do echo "$t [X]"; done) 3>&1 1>&2 2>&3)
+    TEMPLATE=$(whiptail --menu "Select a $DISTRO template:" 15 100 6 $(for t in $TEMPLATE_LIST; do echo "$t [ ]"; done) 3>&1 1>&2 2>&3)
     
     PRIVILEGED=$(whiptail --yesno "Enable Privileged Mode? Most LXCs are unprivileged." 12 50 --title "LXC Privileged Mode" 3>&1 1>&2 2>&3)
     [[ $? -eq 0 ]] && LXC_PRIV="1" || LXC_PRIV="0"
     [[ "$LXC_PRIV" == "0" ]] && LXC_KEYCTL="on" || LXC_KEYCTL="off"
     
+    # Password input with confirmation
+    while true; do
     PASSWORD=$(whiptail --passwordbox "Enter Root Password:" 8 50 --title "LXC Configuration" 3>&1 1>&2 2>&3)
+    CONFIRM_PASSWORD=$(whiptail --passwordbox "Confirm Root Password:" 8 50 --title "LXC Configuration" 3>&1 1>&2 2>&3)
+        if [ "$PASSWORD" == "$CONFIRM_PASSWORD" ]; then
+            break
+        else
+        whiptail --title "Error" --msgbox "Passwords do not match. Please try again." 8 50
+        fi
+    done
     pct create $INSTANCE_ID local:vztmpl/$TEMPLATE -hostname $INSTANCE_NAME -storage $STORAGE -rootfs ${STORAGE}:${DISK_SIZE} -memory $MEMORY -password $PASSWORD -net0 name=eth0,bridge=vmbr0,$NET_CONFIG -features keyctl=$LXC_KEYCTL -unprivileged $LXC_PRIV
     pct start $INSTANCE_ID
     whiptail --title "LXC Created" --msgbox "LXC Container $INSTANCE_ID has been created and started!" 8 50
