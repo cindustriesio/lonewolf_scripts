@@ -58,7 +58,12 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 
-# Set Static or DHCP IP
+# Default values for networking
+NET_CONFIG_VM="virtio,bridge=vmbr0"
+NET_CONFIG_LXC="name=eth0,bridge=vmbr0"
+IP_CONFIG_LXC=""
+
+# Static IP Configuration
 if [[ "$NETWORK_TYPE" == "Static" ]]; then
     IP_ADDRESS=$(whiptail --inputbox "Enter Static IP (e.g., 192.168.1.100/24):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
     [[ $? -ne 0 ]] && { echo "User cancelled. Exiting..."; exit 1; }
@@ -69,13 +74,8 @@ if [[ "$NETWORK_TYPE" == "Static" ]]; then
     DNS=$(whiptail --inputbox "Enter DNS Server (e.g., 8.8.8.8):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
     [[ $? -ne 0 ]] && { echo "User cancelled. Exiting..."; exit 1; }
 
-    NET_CONFIG_VM="virtio,bridge=vmbr0,ip=$IP_ADDRESS,gw=$GATEWAY"
-    NET_CONFIG_LXC="name=eth0,bridge=vmbr0"
+    # LXC Specific Configuration
     IP_CONFIG_LXC="ip=$IP_ADDRESS,gw=$GATEWAY"
-else
-    NET_CONFIG_VM="virtio,bridge=vmbr0,ip=dhcp"
-    NET_CONFIG_LXC="name=eth0,bridge=vmbr0"
-    IP_CONFIG_LXC="ip=dhcp"
 fi
 #NETWORK_TYPE=$(whiptail --menu "Choose Network Type:" 15 50 2 \
 #"DHCP" "Automatically assign IP address" \
@@ -133,7 +133,7 @@ if [[ "$CHOSEN_TYPE" == "VM" ]]; then
 #    --sockets 1 --cores 2 --cpu host --scsi0 $STORAGE:$DISK_SIZE --ide2 $STORAGE:cloudinit
 # Test VM Creation    
     qm create $INSTANCE_ID --name $INSTANCE_NAME --memory $MEMORY \
-    --net0 "$NET_CONFIG_VM" \
+    --net0 "$NET_CONFIG_VM" \  # ✅ Fixed format
     --ostype l26 --cdrom local:iso/$ISO --scsihw virtio-scsi-pci \
     --boot c --agent 1 --sockets 1 --cores 2 --cpu host \
     --scsi0 $STORAGE:$DISK_SIZE --ide2 $STORAGE:cloudinit
