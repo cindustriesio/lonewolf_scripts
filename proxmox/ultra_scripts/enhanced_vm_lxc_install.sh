@@ -1,6 +1,6 @@
 #!/bin/bash
 # Description: Proxmox LXC or VM Creation Script with Fixes
-# Version: 0.6
+# Version: 0.7
 # Created by: Clark Industries IO
 
 # Ensure whiptail is installed
@@ -28,33 +28,37 @@ fi
 
 # Common Configuration
 INSTANCE_ID=$(whiptail --inputbox "Enter Instance ID (default: $AUTO_ID):" 8 50 "$AUTO_ID" --title "$CHOSEN_TYPE Configuration" 3>&1 1>&2 2>&3)
-if [[ $? -ne 0 ]]; then exit 1; fi
+if [[ $? -ne 0 ]]; then (echo "User cancelled. Exiting...") exit 1; fi
 
 INSTANCE_NAME=$(whiptail --inputbox "Enter Hostname:" 8 50 "${CHOSEN_TYPE,,}-$INSTANCE_ID" --title "$CHOSEN_TYPE Configuration" 3>&1 1>&2 2>&3)
-if [[ $? -ne 0 ]]; then exit 1; fi
+if [[ $? -ne 0 ]]; then (echo "User cancelled. Exiting...") exit 1; fi
 
 DISK_SIZE=$(whiptail --inputbox "Enter Disk Size (GB):" 8 50 10 --title "$CHOSEN_TYPE Configuration" 3>&1 1>&2 2>&3)
-if [[ $? -ne 0 ]]; then exit 1; fi
+if [[ $? -ne 0 ]]; then (echo "User cancelled. Exiting...") exit 1; fi
 
 MEMORY=$(whiptail --inputbox "Enter Memory Size (MB):" 8 50 2048 --title "$CHOSEN_TYPE Configuration" 3>&1 1>&2 2>&3)
-if [[ $? -ne 0 ]]; then exit 1; fi
+if [[ $? -ne 0 ]]; then (echo "User cancelled. Exiting...") exit 1; fi
 
 # Get available storage from Proxmox
 STORAGE_OPTIONS=$(pvesm status | awk 'NR>1 {print $1}')
 DEFAULT_STORAGE=$(echo "$STORAGE_OPTIONS" | awk '{print $1}')
 
 STORAGE=$(whiptail --menu "Select Storage:" 15 50 5 $(for s in $STORAGE_OPTIONS; do echo "$s -"; done) --default-item "$DEFAULT_STORAGE" 3>&1 1>&2 2>&3)
-if [[ $? -ne 0 ]]; then exit 1; fi
+if [[ $? -ne 0 ]]; then (echo "User cancelled. Exiting...") exit 1; fi
 
 # Network Configuration
 NETWORK_TYPE=$(whiptail --menu "Choose Network Type:" 15 50 2 \
 "DHCP" "Automatically assign IP address" \
 "Static" "Manually configure IP settings" 3>&1 1>&2 2>&3)
+if [[ $? -ne 0 ]]; then (echo "User cancelled. Exiting...") exit 1; fi
 
 if [[ "$NETWORK_TYPE" == "Static" ]]; then
     IP_ADDRESS=$(whiptail --inputbox "Enter Static IP (e.g., 192.168.1.100/24):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
+    if [[ $? -ne 0 ]]; then (echo "User cancelled. Exiting...") exit 1; fi
     GATEWAY=$(whiptail --inputbox "Enter Gateway (e.g., 192.168.1.1):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
+    if [[ $? -ne 0 ]]; then (echo "User cancelled. Exiting...") exit 1; fi
     DNS=$(whiptail --inputbox "Enter DNS Server (e.g., 8.8.8.8):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
+    if [[ $? -ne 0 ]]; then (echo "User cancelled. Exiting...") exit 1; fi
     NET_CONFIG="ip=$IP_ADDRESS,gw=$GATEWAY"
 else
     NET_CONFIG="ip=dhcp"
