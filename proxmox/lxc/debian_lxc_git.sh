@@ -86,7 +86,7 @@ get_next_lxc_id() {
 }
 
 # Get the next available LXC ID
-AUTO_CT_ID=$(get_next_lxc_id)
+AUTO_CT_ID=$(pvesh get /cluster/nextid)
 
 # Prompt the user with the default auto-selected LXC ID
 CT_ID=$(whiptail --inputbox "Enter Container ID (default: $AUTO_CT_ID):" 8 50 "$AUTO_CT_ID" --title "LXC Configuration" 3>&1 1>&2 2>&3)
