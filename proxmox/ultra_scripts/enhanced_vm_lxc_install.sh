@@ -79,7 +79,7 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
     pveam update > /dev/null
     DISTRO=$(whiptail --menu "Choose LXC Base OS:" 15 50 2 "Debian" "Use a Debian template" "Ubuntu" "Use an Ubuntu template" 3>&1 1>&2 2>&3)
     TEMPLATE_LIST=$(pveam available | grep -i "$DISTRO" | awk '{print $2}')
-    TEMPLATE=$(whiptail --menu "Select a $DISTRO template:" 30 100 6 $(for t in $TEMPLATE_LIST; do echo "$t _"; done) 3>&1 1>&2 2>&3)
+    TEMPLATE=$(whiptail --menu "Select a $DISTRO template:" 30 110 6 $(for t in $TEMPLATE_LIST; do echo "$t _"; done) 3>&1 1>&2 2>&3)
     
     PRIVILEGED=$(whiptail --yesno "Enable Privileged Mode? Most LXCs are unprivileged." 12 50 --title "LXC Privileged Mode" 3>&1 1>&2 2>&3)
     [[ $? -eq 0 ]] && LXC_PRIV="1" || LXC_PRIV="0"
