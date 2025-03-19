@@ -42,11 +42,21 @@ if [[ $? -ne 0 ]]; then exit 1; fi
 # Select Storage
 STORAGE_OPTIONS=$(pvesm status | awk 'NR>1 {print $1}')
 DEFAULT_STORAGE=$(echo "$STORAGE_OPTIONS" | awk '{print $1}')
-STORAGE_SELECTION=""
+
+# Check if STORAGE_OPTIONS is empty
+if [[ -z "$STORAGE_OPTIONS" ]]; then
+    whiptail --title "Error" --msgbox "No storage options found!" 8 50
+    exit 1
+fi
+
+# Format options for whiptail
+STORAGE_SELECTION=()
 for s in $STORAGE_OPTIONS; do
-    STORAGE_SELECTION+="$s Storage  "
+    STORAGE_SELECTION+=("$s" "Available storage")
 done
-STORAGE=$(whiptail --title "Select Storage" --menu "Choose where to store the LXC container:" 20 60 10 $STORAGE_SELECTION 3>&1 1>&2 2>&3)
+
+# Display menu with corrected formatting
+STORAGE=$(whiptail --title "Select Storage" --menu "Choose where to store the LXC container:" 20 60 10 "${STORAGE_SELECTION[@]}" 3>&1 1>&2 2>&3)
 if [[ $? -ne 0 ]]; then exit 1; fi
 
 # Network Configuration
