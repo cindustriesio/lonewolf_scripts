@@ -40,9 +40,13 @@ MEMORY=$(whiptail --inputbox "Enter Memory Size (MB):" 8 50 2048 --title "$CHOSE
 if [[ $? -ne 0 ]]; then exit 1; fi
 
 # Select Storage
-STORAGE_OPTIONS=$(pvesm status | awk 'NR>1 {print $1}')
+STORAGE_OPTIONS=$(pvesm status | awk 'NR>1 {print $1}' | xargs)
 DEFAULT_STORAGE=$(echo "$STORAGE_OPTIONS" | awk '{print $1}')
-STORAGE=$(whiptail --menu "Select Storage:" 15 50 5 $(for s in $STORAGE_OPTIONS; do echo "$s [ ]"; done) --default-item "$DEFAULT_STORAGE" 3>&1 1>&2 2>&3)
+STORAGE_SELECTION=""
+for s in $storage_options; do
+    STORAGE_SELECTION+="$s Storage  "  # Correctly format without "x"
+done
+STORAGE=$(whiptail --title "Select Storage" --menu \ "Choose where to store the LXC container:" 20 60 10 \ $STORAGE_SELECTION 3>&1 1>&2 2>&3)
 if [[ $? -ne 0 ]]; then exit 1; fi
 
 # Network Configuration
