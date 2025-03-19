@@ -105,8 +105,8 @@ if [[ "$CHOSEN_TYPE" == "VM" ]]; then
 #        --ostype l26 --cdrom local:iso/$ISO --scsihw virtio-scsi-pci --boot c --agent 1 \
 #        --sockets 1 --cores 2 --cpu host --scsi0 $STORAGE:$DISK_SIZE --ide2 $STORAGE:cloudinit
     qm create $INSTANCE_ID --name $INSTANCE_NAME --memory $MEMORY \
-        --net0 "virtio,bridge=vmbr0" \  # ✅ Always use default network
-        --ostype l26 --cdrom local:iso/$ISO --scsihw virtio-scsi-pci \
+        --net0 "virtio,bridge=vmbr0" \
+        --cdrom local:iso/$ISO --scsihw virtio-scsi-pci \
         --boot c --agent 1 --sockets 1 --cores 2 --cpu host \
         --scsi0 $STORAGE:$DISK_SIZE --ide2 $STORAGE:cloudinit
 
