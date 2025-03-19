@@ -43,7 +43,7 @@ if [[ $? -ne 0 ]]; then exit 1; fi
 STORAGE_OPTIONS=$(pvesm status | awk 'NR>1 {print $1}')
 DEFAULT_STORAGE=$(echo "$STORAGE_OPTIONS" | awk '{print $1}')
 
-STORAGE=$(whiptail --menu "Select Storage:" 15 50 5 $(for s in $STORAGE_OPTIONS; do echo "$s"; done) --default-item "$DEFAULT_STORAGE" 3>&1 1>&2 2>&3)
+STORAGE=$(whiptail --menu "Select Storage:" 15 50 5 $(for s in $STORAGE_OPTIONS; do echo "$s -"; done) --default-item "$DEFAULT_STORAGE" 3>&1 1>&2 2>&3)
 if [[ $? -ne 0 ]]; then exit 1; fi
 
 # Network Configuration
