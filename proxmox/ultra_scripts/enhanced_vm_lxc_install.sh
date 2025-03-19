@@ -1,6 +1,6 @@
 #!/bin/bash
 # Description: Proxmox LXC or VM Creation Script with Fixes
-# Version: 0.4
+# Version: 0.6
 # Created by: Clark Industries IO
 
 # Ensure whiptail is installed
@@ -79,7 +79,7 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
     pveam update > /dev/null
     DISTRO=$(whiptail --menu "Choose LXC Base OS:" 15 50 2 "Debian" "Use a Debian template" "Ubuntu" "Use an Ubuntu template" 3>&1 1>&2 2>&3)
     TEMPLATE_LIST=$(pveam available | grep -i "$DISTRO" | awk '{print $2}')
-    TEMPLATE=$(whiptail --menu "Select a $DISTRO template:" 15 60 6 $(for t in $TEMPLATE_LIST; do echo "$t [X]"; done) 3>&1 1>&2 2>&3)
+    TEMPLATE=$(whiptail --menu "Select a $DISTRO template:" 30 100 6 $(for t in $TEMPLATE_LIST; do echo "$t [X]"; done) 3>&1 1>&2 2>&3)
     
     PRIVILEGED=$(whiptail --yesno "Enable Privileged Mode? Most LXCs are unprivileged." 12 50 --title "LXC Privileged Mode" 3>&1 1>&2 2>&3)
     [[ $? -eq 0 ]] && LXC_PRIV="1" || LXC_PRIV="0"
@@ -97,5 +97,40 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
     pct create $INSTANCE_ID local:vztmpl/$TEMPLATE -hostname $INSTANCE_NAME -storage $STORAGE -rootfs ${STORAGE}:${DISK_SIZE} -memory $MEMORY -password $PASSWORD -net0 name=eth0,bridge=vmbr0,$NET_CONFIG -features keyctl=$LXC_KEYCTL -unprivileged $LXC_PRIV
     pct start $INSTANCE_ID
     whiptail --title "LXC Created" --msgbox "LXC Container $INSTANCE_ID has been created and started!" 8 50
+    
+    # Ask whether to fetch scripts from GitHub
+    USE_GITHUB=$(whiptail --title "External Scripts" --yesno "Do you want to fetch installation scripts from GitHub?" 8 50 3>&1 1>&2 2>&3)
+        if [[ $? -eq 0 ]]; then
+            # Ask for GitHub script URLs
+        GITHUB_URLS=$(whiptail --inputbox "Enter GitHub script URLs (space-separated):" 10 60 --title "GitHub Script Fetch" 3>&1 1>&2 2>&3)
+        EXTERNAL_SCRIPTS_DIR="/root/lxc-scripts"
+
+        # Create the directory if it doesn't exist
+        mkdir -p "$EXTERNAL_SCRIPTS_DIR"
+
+        # Download scripts from GitHub
+        for url in $GITHUB_URLS; do
+        script_name=$(basename "$url")
+        script_path="$EXTERNAL_SCRIPTS_DIR/$script_name"
+
+        # Download and make the script executable
+        wget -q "$url" -O "$script_path"
+        chmod +x "$script_path"
+        done
+        fi
+
+        # Run scripts on Proxmox (not inside LXC)
+        if [ -d "$EXTERNAL_SCRIPTS_DIR" ] && [ "$(ls -A "$EXTERNAL_SCRIPTS_DIR"/*.sh 2>/dev/null)" ]; then
+        for script in "$EXTERNAL_SCRIPTS_DIR"/*.sh; do
+        echo "Running $(basename "$script") on Proxmox..."
+        bash "$script" "$CT_ID"
+        done
+
+        # Optional: Clean up scripts after execution
+        rm -rf "$EXTERNAL_SCRIPTS_DIR"
+        echo "Removed downloaded scripts."
+        else
+        echo "No scripts found in $EXTERNAL_SCRIPTS_DIR. Skipping execution."
+        fi
 fi
 exit 0
