@@ -47,36 +47,36 @@ STORAGE=$(whiptail --menu "Select Storage:" 15 50 5 $(for s in $STORAGE_OPTIONS;
 if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
 
 # Network Configuration
-# start network test
-# Choose Network Type
-NETWORK_TYPE=$(whiptail --menu "Choose Network Type:" 15 50 2 \
-    "DHCP" "Automatically assign IP address" \
-    "Static" "Manually configure IP settings" 3>&1 1>&2 2>&3)
+if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
+    # Choose Network Type (Only for LXC)
+    NETWORK_TYPE=$(whiptail --menu "Choose Network Type:" 15 50 2 \
+        "DHCP" "Automatically assign IP address" \
+        "Static" "Manually configure IP settings" 3>&1 1>&2 2>&3)
 
-if [[ $? -ne 0 ]]; then 
-    echo "User cancelled. Exiting..."
-    exit 1
+    if [[ $? -ne 0 ]]; then 
+        echo "User cancelled. Exiting..."
+        exit 1
+    fi
+
+    # Default LXC Network Configuration
+    NET_CONFIG_LXC="name=eth0,bridge=vmbr0"
+    IP_CONFIG_LXC=""
+
+    # Static IP Configuration for LXC
+    if [[ "$NETWORK_TYPE" == "Static" ]]; then
+        IP_ADDRESS=$(whiptail --inputbox "Enter Static IP (e.g., 192.168.1.100/24):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
+        [[ $? -ne 0 ]] && { echo "User cancelled. Exiting..."; exit 1; }
+
+        GATEWAY=$(whiptail --inputbox "Enter Gateway (e.g., 192.168.1.1):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
+        [[ $? -ne 0 ]] && { echo "User cancelled. Exiting..."; exit 1; }
+
+        DNS=$(whiptail --inputbox "Enter DNS Server (e.g., 8.8.8.8):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
+        [[ $? -ne 0 ]] && { echo "User cancelled. Exiting..."; exit 1; }
+
+        IP_CONFIG_LXC="ip=$IP_ADDRESS,gw=$GATEWAY"
+    fi
 fi
 
-# Default values for networking
-NET_CONFIG_VM="virtio,bridge=vmbr0"
-NET_CONFIG_LXC="name=eth0,bridge=vmbr0"
-IP_CONFIG_LXC=""
-
-# Static IP Configuration
-if [[ "$NETWORK_TYPE" == "Static" ]]; then
-    IP_ADDRESS=$(whiptail --inputbox "Enter Static IP (e.g., 192.168.1.100/24):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
-    [[ $? -ne 0 ]] && { echo "User cancelled. Exiting..."; exit 1; }
-
-    GATEWAY=$(whiptail --inputbox "Enter Gateway (e.g., 192.168.1.1):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
-    [[ $? -ne 0 ]] && { echo "User cancelled. Exiting..."; exit 1; }
-
-    DNS=$(whiptail --inputbox "Enter DNS Server (e.g., 8.8.8.8):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
-    [[ $? -ne 0 ]] && { echo "User cancelled. Exiting..."; exit 1; }
-
-    # LXC Specific Configuration
-    IP_CONFIG_LXC="ip=$IP_ADDRESS,gw=$GATEWAY"
-fi
 #NETWORK_TYPE=$(whiptail --menu "Choose Network Type:" 15 50 2 \
 #"DHCP" "Automatically assign IP address" \
 #"Static" "Manually configure IP settings" 3>&1 1>&2 2>&3)
@@ -93,67 +93,26 @@ fi
 #else
 #    NET_CONFIG="ip=dhcp"
 #fi
-# VM Creation
-if [[ "$CHOSEN_TYPE" == "VM" ]]; then
-    ISO_STORAGE_PATH="/var/lib/vz/template/iso"
-    ISO_OPTIONS=()
-    EXISTING_ISOS=$(ls "$ISO_STORAGE_PATH" 2>/dev/null | grep -E "\.iso$")
-
-    if [[ -z "$EXISTING_ISOS" ]]; then
-        ISO_OPTIONS+=("No existing ISOs found" "")
-    else
-        for iso in $EXISTING_ISOS; do
-            ISO_OPTIONS+=("$iso" "Use existing ISO: $iso")
-        done
-    fi
-    ISO_OPTIONS+=("Download New ISO" "Enter URL to download a new ISO")
-    SELECTED_ISO=$(whiptail --title "Select ISO" --menu "Choose an ISO for your VM or download a new one:" 20 60 10 "${ISO_OPTIONS[@]}" 3>&1 1>&2 2>&3)
-    if [[ $? -ne 0 ]]; then exit 1; fi
-    # ISO Download
-    if [[ "$SELECTED_ISO" == "Download New ISO" ]]; then
-        ISO_URL=$(whiptail --inputbox "Enter the direct URL to the ISO file:" 10 60 --title "Download ISO" 3>&1 1>&2 2>&3)
-    
-        if [[ $? -ne 0 || -z "$ISO_URL" ]]; then exit 1; fi
-    
-        ISO_FILENAME="${ISO_URL##*/}"
-        ISO_PATH="$ISO_STORAGE_PATH/$ISO_FILENAME"
-        
-        whiptail --title "Downloading ISO" --infobox "Downloading $ISO_FILENAME, please wait..." 8 60
-        wget -O "$ISO_PATH" "$ISO_URL" --progress=bar:force 2>&1 | whiptail --gauge "Downloading $ISO_FILENAME..." 10 60 0
-        
-        if [[ $? -ne 0 ]]; then
-            whiptail --title "Download Failed" --msgbox "Failed to download ISO. Please check the URL and try again." 8 60
-            exit 1
-        fi
-
-        SELECTED_ISO="$ISO_FILENAME"
-    fi
-#    qm create $INSTANCE_ID --name $INSTANCE_NAME --memory $MEMORY --net0 virtio,bridge=vmbr0,$NET_CONFIG \
-#    --ostype l26 --cdrom local:iso/$SELECTED_ISO --scsihw virtio-scsi-pci --boot c --agent 1 \
-#    --sockets 1 --cores 2 --cpu host --scsi0 $STORAGE:$DISK_SIZE --ide2 $STORAGE:cloudinit
-# Test VM Creation    
-    qm create $INSTANCE_ID --name $INSTANCE_NAME --memory $MEMORY \
-    --net0 "$NET_CONFIG_VM" \  # ✅ Fixed format
-    --ostype l26 --cdrom local:iso/$ISO --scsihw virtio-scsi-pci \
-    --boot c --agent 1 --sockets 1 --cores 2 --cpu host \
-    --scsi0 $STORAGE:$DISK_SIZE --ide2 $STORAGE:cloudinit
-    qm start $INSTANCE_ID
-    whiptail --title "VM Created" --msgbox "VM ID $INSTANCE_ID has been created using $SELECTED_ISO and started!" 8 60
-fi
 
 # Handle VM Creation
-#if [[ "$CHOSEN_TYPE" == "VM" ]]; then
-#    ISO_IMAGES=$(ls /var/lib/vz/template/iso | xargs)
-#    DEFAULT_ISO=$(echo "$ISO_IMAGES" | awk '{print $1}')
-#    ISO=$(whiptail --menu "Select ISO Image:" 15 60 5 $(for i in $ISO_IMAGES; do echo "$i [X]"; done) --default-item "$DEFAULT_ISO" 3>&1 1>&2 2>&3)
-#    if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
-#    
+if [[ "$CHOSEN_TYPE" == "VM" ]]; then
+    ISO_IMAGES=$(ls /var/lib/vz/template/iso | xargs)
+    DEFAULT_ISO=$(echo "$ISO_IMAGES" | awk '{print $1}')
+    ISO=$(whiptail --menu "Select ISO Image:" 15 60 5 $(for i in $ISO_IMAGES; do echo "$i [X]"; done) --default-item "$DEFAULT_ISO" 3>&1 1>&2 2>&3)
+    if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
+    
 #    qm create $INSTANCE_ID --name $INSTANCE_NAME --memory $MEMORY --net0 virtio,bridge=vmbr0,$NET_CONFIG \
 #        --ostype l26 --cdrom local:iso/$ISO --scsihw virtio-scsi-pci --boot c --agent 1 \
 #        --sockets 1 --cores 2 --cpu host --scsi0 $STORAGE:$DISK_SIZE --ide2 $STORAGE:cloudinit
-#    qm start $INSTANCE_ID
-#    whiptail --title "VM Created" --msgbox "VM ID $INSTANCE_ID has been created and started!" 8 50
-#fi
+    qm create $INSTANCE_ID --name $INSTANCE_NAME --memory $MEMORY \
+        --net0 "virtio,bridge=vmbr0" \  # ✅ Always use default network
+        --ostype l26 --cdrom local:iso/$ISO --scsihw virtio-scsi-pci \
+        --boot c --agent 1 --sockets 1 --cores 2 --cpu host \
+        --scsi0 $STORAGE:$DISK_SIZE --ide2 $STORAGE:cloudinit
+
+    qm start $INSTANCE_ID
+    whiptail --title "VM Created" --msgbox "VM ID $INSTANCE_ID has been created and started!" 8 50
+fi
 
 # Handle LXC Creation
 if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
@@ -180,11 +139,10 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
         fi
     done
 #    pct create $INSTANCE_ID local:vztmpl/$TEMPLATE -hostname $INSTANCE_NAME -storage $STORAGE -rootfs ${STORAGE}:${DISK_SIZE} -memory $MEMORY -password $PASSWORD -net0 name=eth0,bridge=vmbr0,$NET_CONFIG -features keyctl=$LXC_KEYCTL -unprivileged $LXC_PRIV
-# New LXC Creation
     pct create $INSTANCE_ID local:vztmpl/$TEMPLATE -hostname $INSTANCE_NAME \
-    -storage $STORAGE -rootfs ${STORAGE}:${DISK_SIZE} -memory $MEMORY \
-    -password $PASSWORD -net0 "$NET_CONFIG_LXC" -ipconfig0 "$IP_CONFIG_LXC" \
-    -features keyctl=$LXC_KEYCTL -unprivileged $LXC_PRIV
+        -storage $STORAGE -rootfs ${STORAGE}:${DISK_SIZE} -memory $MEMORY \
+        -password $PASSWORD -net0 "$NET_CONFIG_LXC" -ipconfig0 "$IP_CONFIG_LXC" \
+        -features keyctl=$LXC_KEYCTL -unprivileged $LXC_PRIV
 
     pct start $INSTANCE_ID
     
