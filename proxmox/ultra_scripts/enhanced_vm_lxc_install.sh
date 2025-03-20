@@ -64,9 +64,12 @@ if [[ "$CHOSEN_TYPE" == "VM" ]]; then
 #    if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
 # New Test
     ISO_STORAGE_PATH="/var/lib/vz/template/iso"
+    mkdir -p "$ISO_STORAGE_PATH"
+
     ISO_OPTIONS=()
     EXISTING_ISOS=$(ls "$ISO_STORAGE_PATH" 2>/dev/null | grep -E "\.iso$")
 
+    # Add existing ISOs to selection menu
     if [[ -z "$EXISTING_ISOS" ]]; then
         ISO_OPTIONS+=("No existing ISOs found" "")
     else
@@ -74,30 +77,40 @@ if [[ "$CHOSEN_TYPE" == "VM" ]]; then
             ISO_OPTIONS+=("$iso" "Use existing ISO: $iso")
         done
     fi
-    # Download New ISO
+
+    # Option to download a new ISO
     ISO_OPTIONS+=("Download New ISO" "Enter URL to download a new ISO")
+
     SELECTED_ISO=$(whiptail --title "Select ISO" --menu "Choose an ISO for your VM or download a new one:" 20 60 10 "${ISO_OPTIONS[@]}" 3>&1 1>&2 2>&3)
 
     if [[ $? -ne 0 ]]; then exit 1; fi
-    # Handle selected ISO
+
+    # Handle ISO selection
     if [[ "$SELECTED_ISO" == "Download New ISO" ]]; then
         ISO_URL=$(whiptail --inputbox "Enter the direct URL to the ISO file:" 10 60 --title "Download ISO" 3>&1 1>&2 2>&3)
         
         if [[ $? -ne 0 || -z "$ISO_URL" ]]; then exit 1; fi
-        
+
         ISO_FILENAME="${ISO_URL##*/}"
         ISO_PATH="$ISO_STORAGE_PATH/$ISO_FILENAME"
+
+        echo "Downloading ISO: $ISO_FILENAME"
         
-        whiptail --title "Downloading ISO" --infobox "Downloading $ISO_FILENAME, please wait..." 8 60
-        wget -O "$ISO_PATH" "$ISO_URL" --progress=bar:force 2>&1 | whiptail --gauge "Downloading $ISO_FILENAME..." 10 60 0
-        
+        # Download with progress display
+        wget --show-progress --progress=dot:mega -O "$ISO_PATH" "$ISO_URL"
+
         if [[ $? -ne 0 ]]; then
             whiptail --title "Download Failed" --msgbox "Failed to download ISO. Please check the URL and try again." 8 60
             exit 1
         fi
-        
-    SELECTED_ISO="$ISO_FILENAME"
+
+        echo "Download completed: $ISO_FILENAME"
+        SELECTED_ISO="$ISO_FILENAME"
     fi
+
+    # Ensure Proxmox recognizes the ISO
+    pvesm set local --content iso
+    echo "ISO Ready: $SELECTED_ISO"
 
     # Create VM using qm command
     qm create $INSTANCE_ID --name $INSTANCE_NAME --memory $MEMORY \
