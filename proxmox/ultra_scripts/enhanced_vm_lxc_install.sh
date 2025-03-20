@@ -66,28 +66,26 @@ fi
 if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
     pveam update > /dev/null
     DISTRO=$(whiptail --menu "Choose LXC Base OS:" 15 50 2 "Debian" "Use a Debian template" "Ubuntu" "Use an Ubuntu template" 3>&1 1>&2 2>&3)
-    if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
     TEMPLATE_LIST=$(pveam available | grep -i "$DISTRO" | awk '{print $2}')
-    TEMPLATE=$(whiptail --menu "Select a $DISTRO template:" 30 110 6 $(for t in $TEMPLATE_LIST; do echo "$t _"; done) 3>&1 1>&2 2>&3)
-    if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
-
+    TEMPLATE=$(whiptail --menu "Select a $DISTRO template:" 15 60 6 $(for t in $TEMPLATE_LIST; do echo "$t [X]"; done) 3>&1 1>&2 2>&3)
+    
     PRIVILEGED=$(whiptail --yesno "Enable Privileged Mode? Most LXCs are unprivileged." 12 50 --title "LXC Privileged Mode" 3>&1 1>&2 2>&3)
     [[ $? -eq 0 ]] && LXC_PRIV="1" || LXC_PRIV="0"
     [[ "$LXC_PRIV" == "0" ]] && LXC_KEYCTL="on" || LXC_KEYCTL="off"
     
+    PASSWORD=""
+    CONFIRM_PASSWORD=""
     while true; do
         PASSWORD=$(whiptail --passwordbox "Enter Root Password:" 8 50 --title "LXC Configuration" 3>&1 1>&2 2>&3)
-        if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
         CONFIRM_PASSWORD=$(whiptail --passwordbox "Confirm Root Password:" 8 50 --title "LXC Configuration" 3>&1 1>&2 2>&3)
-        if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
         if [[ "$PASSWORD" == "$CONFIRM_PASSWORD" ]]; then
             break
         else
-            whiptail --title "Error" --msgbox "Passwords do not match. Please try again." 8 50
+            whiptail --title "Password Mismatch" --msgbox "Passwords do not match. Please try again." 8 50
         fi
     done
-
-    # Network Configuration for LXC
+    
+    # Network Configuration for LXC only
     NETWORK_TYPE=$(whiptail --menu "Choose Network Type:" 15 50 2 \ 
     "DHCP" "Automatically assign IP address" \
     "Static" "Manually configure IP settings" 3>&1 1>&2 2>&3)
@@ -103,6 +101,7 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
     
     pct create $INSTANCE_ID local:vztmpl/$TEMPLATE -hostname $INSTANCE_NAME -storage $STORAGE -rootfs ${STORAGE}:${DISK_SIZE} -memory $MEMORY -password $PASSWORD -net0 "$NET_CONFIG" -features keyctl=$LXC_KEYCTL -unprivileged $LXC_PRIV
     pct start $INSTANCE_ID
+    whiptail --title "LXC Created" --msgbox "LXC Container $INSTANCE_ID has been created and started!" 8 50
     
     # Ask whether to fetch scripts from GitHub
     USE_GITHUB=$(whiptail --title "External Scripts" --yesno "Do you want to fetch additional scripts from GitHub?" 8 50 3>&1 1>&2 2>&3)
