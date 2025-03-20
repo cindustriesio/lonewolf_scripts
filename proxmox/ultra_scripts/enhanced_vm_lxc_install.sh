@@ -1,6 +1,6 @@
 #!/bin/bash
 # Description: Proxmox LXC or VM Creation Script
-# Version: 1.0
+# Version: 1.1
 # ProjectL: Lonewolf Scripts
 # Created by: Clark Industries IO
 
@@ -48,14 +48,14 @@ if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
 STORAGE_OPTIONS=$(pvesm status | awk 'NR>1 {print $1}')
 DEFAULT_STORAGE=$(echo "$STORAGE_OPTIONS" | awk '{print $1}')
 
-STORAGE=$(whiptail --menu "Select Storage:" 15 50 5 $(for s in $STORAGE_OPTIONS; do echo "$s -"; done) --default-item "$DEFAULT_STORAGE" 3>&1 1>&2 2>&3)
+STORAGE=$(whiptail --menu "Select Storage:" 15 50 5 $(for s in $STORAGE_OPTIONS; do echo "$s _"; done) --default-item "$DEFAULT_STORAGE" 3>&1 1>&2 2>&3)
 if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
 
 # Handle VM Creation
 if [[ "$CHOSEN_TYPE" == "VM" ]]; then
     ISO_IMAGES=$(ls /var/lib/vz/template/iso | xargs)
     DEFAULT_ISO=$(echo "$ISO_IMAGES" | awk '{print $1}')
-    ISO=$(whiptail --menu "Select ISO Image:" 15 60 5 $(for i in $ISO_IMAGES; do echo "$i [X]"; done) --default-item "$DEFAULT_ISO" 3>&1 1>&2 2>&3)
+    ISO=$(whiptail --menu "Select ISO Image:" 15 60 5 $(for i in $ISO_IMAGES; do echo "$i [_]"; done) --default-item "$DEFAULT_ISO" 3>&1 1>&2 2>&3)
     if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
     # Create VM using qm command
     qm create $INSTANCE_ID --name $INSTANCE_NAME --memory $MEMORY \
@@ -120,6 +120,12 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
         GATEWAY=""
         DNS_SERVERS=""
     fi
+    # Confirm settings 
+    whiptail --title "Confirm Settings" --yesno "Container ID: $INSTANCE_ID\nHostname: $INSTANCE_NAME\n$DISTRO Version: $TEMPLATE\nDisk Size: ${DISK_SIZE}G\nMemory: ${MEMORY}MB\nStorage: $STORAGE\nNetwork: $NET_TYPE\nStatic IP: $IP_ADDR\nGateway: $GATEWAY\nDNS: ${DNS_SERVERS:-Auto}\n\nProceed?" 20 60
+        if [ $? -ne 0 ]; then
+        echo "Abort. Abort. Abort."
+        exit 1
+        fi
     echo "Forging LXC Container..."
     pct create $INSTANCE_ID local:vztmpl/$TEMPLATE -hostname $INSTANCE_NAME -storage $STORAGE -rootfs ${STORAGE}:${DISK_SIZE} -cores $CPU_CORES -memory $MEMORY -password $PASSWORD -net0 "name=eth0,bridge=vmbr0,ip=$IP_ADDR$( [[ -n "$GATEWAY" ]] && echo ",gw=$GATEWAY")" -features keyctl=$LXC_KEYCTL -unprivileged $LXC_PRIV
     # Apply DNS settings if set
