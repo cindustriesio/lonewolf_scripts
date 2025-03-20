@@ -46,37 +46,6 @@ DEFAULT_STORAGE=$(echo "$STORAGE_OPTIONS" | awk '{print $1}')
 STORAGE=$(whiptail --menu "Select Storage:" 15 50 5 $(for s in $STORAGE_OPTIONS; do echo "$s -"; done) --default-item "$DEFAULT_STORAGE" 3>&1 1>&2 2>&3)
 if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
 
-# Network Configuration
-if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
-    # Choose Network Type (Only for LXC)
-    NETWORK_TYPE=$(whiptail --menu "Choose Network Type:" 15 50 2 \
-        "DHCP" "Automatically assign IP address" \
-        "Static" "Manually configure IP settings" 3>&1 1>&2 2>&3)
-
-    if [[ $? -ne 0 ]]; then 
-        echo "User cancelled. Exiting..."
-        exit 1
-    fi
-
-    # Default LXC Network Configuration
-    NET_CONFIG_LXC="name=eth0,bridge=vmbr0"
-    IP_CONFIG_LXC=""
-
-    # Static IP Configuration for LXC
-    if [[ "$NETWORK_TYPE" == "Static" ]]; then
-        IP_ADDRESS=$(whiptail --inputbox "Enter Static IP (e.g., 192.168.1.100/24):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
-        [[ $? -ne 0 ]] && { echo "User cancelled. Exiting..."; exit 1; }
-
-        GATEWAY=$(whiptail --inputbox "Enter Gateway (e.g., 192.168.1.1):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
-        [[ $? -ne 0 ]] && { echo "User cancelled. Exiting..."; exit 1; }
-
-        DNS=$(whiptail --inputbox "Enter DNS Server (e.g., 8.8.8.8):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
-        [[ $? -ne 0 ]] && { echo "User cancelled. Exiting..."; exit 1; }
-
-        IP_CONFIG_LXC="ip=$IP_ADDRESS,gw=$GATEWAY"
-    fi
-fi
-
 #NETWORK_TYPE=$(whiptail --menu "Choose Network Type:" 15 50 2 \
 #"DHCP" "Automatically assign IP address" \
 #"Static" "Manually configure IP settings" 3>&1 1>&2 2>&3)
@@ -153,11 +122,11 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
     else
     NET_CONFIG="ip=dhcp"
     fi
-#    pct create $INSTANCE_ID local:vztmpl/$TEMPLATE -hostname $INSTANCE_NAME -storage $STORAGE -rootfs ${STORAGE}:${DISK_SIZE} -memory $MEMORY -password $PASSWORD -net0 name=eth0,bridge=vmbr0,$NET_CONFIG -features keyctl=$LXC_KEYCTL -unprivileged $LXC_PRIV
-    pct create $INSTANCE_ID local:vztmpl/$TEMPLATE -hostname $INSTANCE_NAME \
-        -storage $STORAGE -rootfs ${STORAGE}:${DISK_SIZE} -memory $MEMORY \
-        -password $PASSWORD -net0 "$NET_CONFIG_LXC" -ipconfig0 "$IP_CONFIG_LXC" \
-        -features keyctl=$LXC_KEYCTL -unprivileged $LXC_PRIV
+    pct create $INSTANCE_ID local:vztmpl/$TEMPLATE -hostname $INSTANCE_NAME -storage $STORAGE -rootfs ${STORAGE}:${DISK_SIZE} -memory $MEMORY -password $PASSWORD -net0 name=eth0,bridge=vmbr0,$NET_CONFIG -features keyctl=$LXC_KEYCTL -unprivileged $LXC_PRIV
+    #pct create $INSTANCE_ID local:vztmpl/$TEMPLATE -hostname $INSTANCE_NAME \
+    #    -storage $STORAGE -rootfs ${STORAGE}:${DISK_SIZE} -memory $MEMORY \
+    #    -password $PASSWORD -net0 "$NET_CONFIG_LXC" -ipconfig0 "$IP_CONFIG_LXC" \
+    #    -features keyctl=$LXC_KEYCTL -unprivileged $LXC_PRIV
 
     pct start $INSTANCE_ID
     
