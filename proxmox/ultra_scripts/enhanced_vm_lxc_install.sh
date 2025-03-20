@@ -95,23 +95,35 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
     done
     
     # Network Configuration
-    NETWORK_TYPE=$(whiptail --menu "Choose Network Type:" 15 50 2 \
-    "DHCP" "Automatically assign IP address" \
-    "Static" "Manually configure IP settings" 3>&1 1>&2 2>&3)
-    if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
+    NET_TYPE=$(whiptail --title "Network Configuration" --menu "Choose Network Type:" 15 50 2 \
+    "dhcp" "Use DHCP (Automatic IP)" \
+    "static" "Set Static IP Address" 3>&1 1>&2 2>&3)
 
-    if [[ "$NETWORK_TYPE" == "Static" ]]; then
-        IP_ADDRESS=$(whiptail --inputbox "Enter Static IP (e.g., 192.168.1.100/24):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
-        if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
-        GATEWAY=$(whiptail --inputbox "Enter Gateway (e.g., 192.168.1.1):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
-        if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
-        DNS=$(whiptail --inputbox "Enter DNS Server (e.g., 8.8.8.8):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
-        if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
-        NET_CONFIG="ip=$IP_ADDRESS,gw=$GATEWAY"
+    if [[ "$NET_TYPE" == "static" ]]; then
+        IP_ADDR=$(whiptail --inputbox "Enter Static IP Address (e.g., 192.168.1.100/24):" 10 60 "192.168.1.100/24" --title "Static IP Configuration" 3>&1 1>&2 2>&3)
+        
+        GATEWAY=$(whiptail --inputbox "Enter Gateway (default: 192.168.1.1):" 10 60 "192.168.1.1" --title "Gateway Configuration" 3>&1 1>&2 2>&3)
+        
+        DNS_OPTION=$(whiptail --title "DNS Configuration" --menu "Choose DNS Configuration:" 15 50 2 \
+            "auto" "Use Default DNS (Proxmox Resolver)" \
+            "manual" "Enter Custom DNS" 3>&1 1>&2 2>&3)
+
+        if [[ "$DNS_OPTION" == "manual" ]]; then
+            DNS_SERVERS=$(whiptail --inputbox "Enter DNS Servers (e.g., 8.8.8.8 1.1.1.1):" 10 60 "8.8.8.8 1.1.1.1" --title "DNS Configuration" 3>&1 1>&2 2>&3)
+        else
+            DNS_SERVERS=""
+        fi
     else
-        NET_CONFIG="ip=dhcp"
+        IP_ADDR="dhcp"
+        GATEWAY=""
+        DNS_SERVERS=""
     fi
-    pct create $INSTANCE_ID local:vztmpl/$TEMPLATE -hostname $INSTANCE_NAME -storage $STORAGE -rootfs ${STORAGE}:${DISK_SIZE} -cores $CPU_CORES -memory $MEMORY -password $PASSWORD -net0 name=eth0,bridge=vmbr0,$NET_CONFIG -nameserver $DNS -features keyctl=$LXC_KEYCTL -unprivileged $LXC_PRIV
+    pct create $INSTANCE_ID local:vztmpl/$TEMPLATE -hostname $INSTANCE_NAME -storage $STORAGE -rootfs ${STORAGE}:${DISK_SIZE} -cores $CPU_CORES -memory $MEMORY -password $PASSWORD -net0 "name=eth0,bridge=vmbr0,ip=$IP_ADDR$( [[ -n "$GATEWAY" ]] && echo ",gw=$GATEWAY")" -features keyctl=$LXC_KEYCTL -unprivileged $LXC_PRIV
+    # Apply DNS settings if set
+    if [[ -n "$DNS_SERVERS" ]]; then
+        echo "Setting custom DNS servers..."
+        echo "nameserver $DNS_SERVERS" > /etc/pve/lxc/${INSTANCE_ID}.conf
+    fi
     pct start $INSTANCE_ID
     
     # Ask whether to fetch scripts from GitHub
