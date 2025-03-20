@@ -97,7 +97,7 @@ if [[ "$CHOSEN_TYPE" == "VM" ]]; then
         echo "Downloading ISO: $ISO_FILENAME"
         
         # Download with progress display
-        wget --show-progress --progress=dot:mega -O "$ISO_PATH" "$ISO_URL"
+        wget --progress=bar:force -O "$ISO_PATH" "$ISO_URL" 2>&1 | tail -f -n +6
 
         if [[ $? -ne 0 ]]; then
             whiptail --title "Download Failed" --msgbox "Failed to download ISO. Please check the URL and try again." 8 60
