@@ -1,6 +1,7 @@
 #!/bin/bash
 # Description: Proxmox LXC or VM Creation Script
 # Version: 1.0
+# ProjectL: Lonewolf Scripts
 # Created by: Clark Industries IO
 
 # Ensure whiptail is installed
@@ -62,7 +63,7 @@ if [[ "$CHOSEN_TYPE" == "VM" ]]; then
         --cdrom local:iso/$ISO --scsihw virtio-scsi-pci \
         --boot c --agent 1 --sockets 1 --cores $CPU_CORES --cpu host \
         --scsi0 $STORAGE:$DISK_SIZE --ide2 $STORAGE:cloudinit
-        # Ask if user wants to start the VM
+    # Ask if user wants to start the VM
     if whiptail --yesno "Do you want to start the VM now?" 8 50 --title "Start VM"; then
         qm start $INSTANCE_ID
         whiptail --title "VM Started" --msgbox "VM ID $INSTANCE_ID has been started!" 8 50
@@ -94,22 +95,23 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
         fi
     done
     
-    # Network Configuration
+    # Network Configuration for LXC only
     NET_TYPE=$(whiptail --title "Network Configuration" --menu "Choose Network Type:" 15 50 2 \
     "dhcp" "Use DHCP (Automatic IP)" \
     "static" "Set Static IP Address" 3>&1 1>&2 2>&3)
 
     if [[ "$NET_TYPE" == "static" ]]; then
         IP_ADDR=$(whiptail --inputbox "Enter Static IP Address (e.g., 192.168.1.100/24):" 10 60 "192.168.1.100/24" --title "Static IP Configuration" 3>&1 1>&2 2>&3)
-        
+        if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
         GATEWAY=$(whiptail --inputbox "Enter Gateway (default: 192.168.1.1):" 10 60 "192.168.1.1" --title "Gateway Configuration" 3>&1 1>&2 2>&3)
-        
+        if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
         DNS_OPTION=$(whiptail --title "DNS Configuration" --menu "Choose DNS Configuration:" 15 50 2 \
             "auto" "Use Default DNS (Proxmox Resolver)" \
             "manual" "Enter Custom DNS" 3>&1 1>&2 2>&3)
-
+        if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
         if [[ "$DNS_OPTION" == "manual" ]]; then
             DNS_SERVERS=$(whiptail --inputbox "Enter DNS Servers (e.g., 8.8.8.8 1.1.1.1):" 10 60 "8.8.8.8 1.1.1.1" --title "DNS Configuration" 3>&1 1>&2 2>&3)
+            if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
         else
             DNS_SERVERS=""
         fi
@@ -118,6 +120,7 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
         GATEWAY=""
         DNS_SERVERS=""
     fi
+    echo "Forging LXC Container..."
     pct create $INSTANCE_ID local:vztmpl/$TEMPLATE -hostname $INSTANCE_NAME -storage $STORAGE -rootfs ${STORAGE}:${DISK_SIZE} -cores $CPU_CORES -memory $MEMORY -password $PASSWORD -net0 "name=eth0,bridge=vmbr0,ip=$IP_ADDR$( [[ -n "$GATEWAY" ]] && echo ",gw=$GATEWAY")" -features keyctl=$LXC_KEYCTL -unprivileged $LXC_PRIV
     # Apply DNS settings if set
     if [[ -n "$DNS_SERVERS" ]]; then
