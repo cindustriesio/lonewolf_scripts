@@ -87,7 +87,7 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
     
     # Network Configuration for LXC only
     NETWORK_TYPE=$(whiptail --menu "Choose Network Type:" 15 50 2 \ 
-    "DHCP" "Automatically assign IP address" \
+    "DHCP" "Automatically assign IP address" \ 
     "Static" "Manually configure IP settings" 3>&1 1>&2 2>&3)
     
     if [[ "$NETWORK_TYPE" == "Static" ]]; then
