@@ -26,8 +26,10 @@ if [[ $? -ne 0 ]]; then
     whiptail --title "Error" --msgbox "Failed to get next available ID." 8 50
     exit 1
 fi
+# Part 1: Common Configuration
+whiptail --title "Custom Configuration: Part 1" --msgbox "Enter common configuration for $CHOSEN_TYPE" 8 50
+if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
 
-# Common Configuration
 # Select Instance ID
 INSTANCE_ID=$(whiptail --inputbox "Enter Instance ID (default: $AUTO_ID):" 8 50 "$AUTO_ID" --title "$CHOSEN_TYPE Configuration" 3>&1 1>&2 2>&3)
 if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
@@ -53,6 +55,9 @@ if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
 
 # Handle VM Creation
 if [[ "$CHOSEN_TYPE" == "VM" ]]; then
+    whiptail --title "Custom Configuration: Part 2" --msgbox "$CHOSEN_TYPE Specifc Configuration Settings, Please Contiune." 8 50
+    if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
+    # Get ISO Images
     ISO_IMAGES=$(ls /var/lib/vz/template/iso | xargs)
     DEFAULT_ISO=$(echo "$ISO_IMAGES" | awk '{print $1}')
     ISO=$(whiptail --menu "Select ISO Image:" 15 60 5 $(for i in $ISO_IMAGES; do echo "$i [_]"; done) --default-item "$DEFAULT_ISO" 3>&1 1>&2 2>&3)
@@ -72,6 +77,9 @@ fi
 
 # Handle LXC Creation
 if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
+    whiptail --title "Custom Configuration: Part 2" --msgbox "$CHOSEN_TYPE Specifc Configuration Settings, Please Contiune." 8 50
+    if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
+    # Get LXC templates
     pveam update > /dev/null
     DISTRO=$(whiptail --menu "Choose LXC Base OS:" 15 50 2 "Debian" "Use a Debian template" "Ubuntu" "Use an Ubuntu template" 3>&1 1>&2 2>&3)
     if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
@@ -120,10 +128,10 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
         GATEWAY=""
         DNS_SERVERS=""
     fi
-    # Confirm settings 
-    whiptail --title "Confirm Settings" --yesno "Container ID: $INSTANCE_ID\nHostname: $INSTANCE_NAME\n$DISTRO Version: $TEMPLATE\nDisk Size: ${DISK_SIZE}G\nMemory: ${MEMORY}MB\nStorage: $STORAGE\nNetwork: $NET_TYPE\nStatic IP: $IP_ADDR\nGateway: $GATEWAY\nDNS: ${DNS_SERVERS:-Auto}\n\nProceed?" 20 60
+    # Confirm LXC settings 
+    whiptail --title "Confirm Settings" --yesno "Container ID: $INSTANCE_ID\nHostname: $INSTANCE_NAME\n$DISTRO Version: $TEMPLATE\nDisk Size: ${DISK_SIZE}G\nMemory: ${MEMORY}MB\nStorage: $STORAGE\nNetwork: $NET_TYPE\nStatic IP: $IP_ADDR\nGateway: ${GATEWAY:-Auto}\nDNS: ${DNS_SERVERS:-Auto}\n\nProceed?" 20 60
         if [ $? -ne 0 ]; then
-        echo "Abort. Abort. Abort."
+        echo "Code Red. Abort. Abort. Abort."
         exit 1
         fi
     echo "Forging LXC Container..."
