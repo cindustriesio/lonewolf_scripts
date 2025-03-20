@@ -106,10 +106,10 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
         GATEWAY=$(whiptail --inputbox "Enter Gateway (e.g., 192.168.1.1):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
         if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
         DNS=$(whiptail --inputbox "Enter DNS Server (e.g., 8.8.8.8):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
-    if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
-    NET_CONFIG="ip=$IP_ADDRESS,gw=$GATEWAY"
+        if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
+        NET_CONFIG="ip=$IP_ADDRESS,gw=$GATEWAY"
     else
-    NET_CONFIG="ip=dhcp"
+        NET_CONFIG="ip=dhcp"
     fi
     pct create $INSTANCE_ID local:vztmpl/$TEMPLATE -hostname $INSTANCE_NAME -storage $STORAGE -rootfs ${STORAGE}:${DISK_SIZE} -cores $CPU_CORES -memory $MEMORY -password $PASSWORD -net0 name=eth0,bridge=vmbr0,$NET_CONFIG -nameserver $DNS -features keyctl=$LXC_KEYCTL -unprivileged $LXC_PRIV
     pct start $INSTANCE_ID
