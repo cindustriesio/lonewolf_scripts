@@ -89,13 +89,13 @@ if [[ "$CHOSEN_TYPE" == "VM" ]]; then
         ISO_PATH="$ISO_STORAGE_PATH/$ISO_FILENAME"
         
         whiptail --title "Downloading ISO" --infobox "Downloading $ISO_FILENAME, please wait..." 8 60
-        wget -O "$ISO_PATH" "$ISO_URL" 2>&1 | pv -lep -s $(curl -sI "$ISO_URL" | awk '/Content-Length/ {print $2}') | whiptail --gauge "Downloading ISO..." 10 70 0
+        wget -O "$ISO_PATH" "$ISO_URL" --progress=bar:force 2>&1 | whiptail --gauge "Downloading $ISO_FILENAME..." 10 60 0
         
         if [[ $? -ne 0 ]]; then
             whiptail --title "Download Failed" --msgbox "Failed to download ISO. Please check the URL and try again." 8 60
             exit 1
         fi
-
+        
     SELECTED_ISO="$ISO_FILENAME"
     fi
 
