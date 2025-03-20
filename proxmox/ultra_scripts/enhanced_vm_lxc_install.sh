@@ -46,6 +46,54 @@ DEFAULT_STORAGE=$(echo "$STORAGE_OPTIONS" | awk '{print $1}')
 STORAGE=$(whiptail --menu "Select Storage:" 15 50 5 $(for s in $STORAGE_OPTIONS; do echo "$s -"; done) --default-item "$DEFAULT_STORAGE" 3>&1 1>&2 2>&3)
 if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
 
+# Network Configuration
+if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
+    # Choose Network Type (Only for LXC)
+    NETWORK_TYPE=$(whiptail --menu "Choose Network Type:" 15 50 2 \
+        "DHCP" "Automatically assign IP address" \
+        "Static" "Manually configure IP settings" 3>&1 1>&2 2>&3)
+
+    if [[ $? -ne 0 ]]; then 
+        echo "User cancelled. Exiting..."
+        exit 1
+    fi
+
+    # Default LXC Network Configuration
+    NET_CONFIG_LXC="name=eth0,bridge=vmbr0"
+    IP_CONFIG_LXC=""
+
+    # Static IP Configuration for LXC
+    if [[ "$NETWORK_TYPE" == "Static" ]]; then
+        IP_ADDRESS=$(whiptail --inputbox "Enter Static IP (e.g., 192.168.1.100/24):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
+        [[ $? -ne 0 ]] && { echo "User cancelled. Exiting..."; exit 1; }
+
+        GATEWAY=$(whiptail --inputbox "Enter Gateway (e.g., 192.168.1.1):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
+        [[ $? -ne 0 ]] && { echo "User cancelled. Exiting..."; exit 1; }
+
+        DNS=$(whiptail --inputbox "Enter DNS Server (e.g., 8.8.8.8):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
+        [[ $? -ne 0 ]] && { echo "User cancelled. Exiting..."; exit 1; }
+
+        IP_CONFIG_LXC="ip=$IP_ADDRESS,gw=$GATEWAY"
+    fi
+fi
+
+#NETWORK_TYPE=$(whiptail --menu "Choose Network Type:" 15 50 2 \
+#"DHCP" "Automatically assign IP address" \
+#"Static" "Manually configure IP settings" 3>&1 1>&2 2>&3)
+#if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
+
+#if [[ "$NETWORK_TYPE" == "Static" ]]; then
+#    IP_ADDRESS=$(whiptail --inputbox "Enter Static IP (e.g., 192.168.1.100/24):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
+#    if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
+#    GATEWAY=$(whiptail --inputbox "Enter Gateway (e.g., 192.168.1.1):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
+#    if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
+#    DNS=$(whiptail --inputbox "Enter DNS Server (e.g., 8.8.8.8):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
+#    if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
+#    NET_CONFIG="ip=$IP_ADDRESS,gw=$GATEWAY"
+#else
+#    NET_CONFIG="ip=dhcp"
+#fi
+
 # Handle VM Creation
 if [[ "$CHOSEN_TYPE" == "VM" ]]; then
     ISO_IMAGES=$(ls /var/lib/vz/template/iso | xargs)
@@ -53,6 +101,9 @@ if [[ "$CHOSEN_TYPE" == "VM" ]]; then
     ISO=$(whiptail --menu "Select ISO Image:" 15 60 5 $(for i in $ISO_IMAGES; do echo "$i [X]"; done) --default-item "$DEFAULT_ISO" 3>&1 1>&2 2>&3)
     if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
     
+#    qm create $INSTANCE_ID --name $INSTANCE_NAME --memory $MEMORY --net0 virtio,bridge=vmbr0,$NET_CONFIG \
+#        --ostype l26 --cdrom local:iso/$ISO --scsihw virtio-scsi-pci --boot c --agent 1 \
+#        --sockets 1 --cores 2 --cpu host --scsi0 $STORAGE:$DISK_SIZE --ide2 $STORAGE:cloudinit
     qm create $INSTANCE_ID --name $INSTANCE_NAME --memory $MEMORY \
         --net0 "virtio,bridge=vmbr0" \
         --cdrom local:iso/$ISO --scsihw virtio-scsi-pci \
@@ -66,41 +117,49 @@ fi
 if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
     pveam update > /dev/null
     DISTRO=$(whiptail --menu "Choose LXC Base OS:" 15 50 2 "Debian" "Use a Debian template" "Ubuntu" "Use an Ubuntu template" 3>&1 1>&2 2>&3)
+    if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
     TEMPLATE_LIST=$(pveam available | grep -i "$DISTRO" | awk '{print $2}')
-    TEMPLATE=$(whiptail --menu "Select a $DISTRO template:" 15 60 6 $(for t in $TEMPLATE_LIST; do echo "$t [X]"; done) 3>&1 1>&2 2>&3)
-    
+    TEMPLATE=$(whiptail --menu "Select a $DISTRO template:" 30 110 6 $(for t in $TEMPLATE_LIST; do echo "$t _"; done) 3>&1 1>&2 2>&3)
+    if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
+
     PRIVILEGED=$(whiptail --yesno "Enable Privileged Mode? Most LXCs are unprivileged." 12 50 --title "LXC Privileged Mode" 3>&1 1>&2 2>&3)
     [[ $? -eq 0 ]] && LXC_PRIV="1" || LXC_PRIV="0"
     [[ "$LXC_PRIV" == "0" ]] && LXC_KEYCTL="on" || LXC_KEYCTL="off"
     
-    PASSWORD=""
-    CONFIRM_PASSWORD=""
     while true; do
         PASSWORD=$(whiptail --passwordbox "Enter Root Password:" 8 50 --title "LXC Configuration" 3>&1 1>&2 2>&3)
+        if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
         CONFIRM_PASSWORD=$(whiptail --passwordbox "Confirm Root Password:" 8 50 --title "LXC Configuration" 3>&1 1>&2 2>&3)
+        if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
         if [[ "$PASSWORD" == "$CONFIRM_PASSWORD" ]]; then
             break
         else
-            whiptail --title "Password Mismatch" --msgbox "Passwords do not match. Please try again." 8 50
+            whiptail --title "Error" --msgbox "Passwords do not match. Please try again." 8 50
         fi
     done
-    
-    # Network Configuration for LXC only
-    NETWORK_TYPE=$(whiptail --menu "Choose Network Type:" 15 50 2 \ 
-    "DHCP" "Automatically assign IP address" \ 
+    NETWORK_TYPE=$(whiptail --menu "Choose Network Type:" 15 50 2 \
+    "DHCP" "Automatically assign IP address" \
     "Static" "Manually configure IP settings" 3>&1 1>&2 2>&3)
+    if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
+
     if [[ "$NETWORK_TYPE" == "Static" ]]; then
         IP_ADDRESS=$(whiptail --inputbox "Enter Static IP (e.g., 192.168.1.100/24):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
+        if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
         GATEWAY=$(whiptail --inputbox "Enter Gateway (e.g., 192.168.1.1):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
+        if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
         DNS=$(whiptail --inputbox "Enter DNS Server (e.g., 8.8.8.8):" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
-        NET_CONFIG="name=eth0,bridge=vmbr0,ip=$IP_ADDRESS,gw=$GATEWAY"
+    if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
+    NET_CONFIG="ip=$IP_ADDRESS,gw=$GATEWAY"
     else
-        NET_CONFIG="name=eth0,bridge=vmbr0,ip=dhcp"
+    NET_CONFIG="ip=dhcp"
     fi
-    
-    pct create $INSTANCE_ID local:vztmpl/$TEMPLATE -hostname $INSTANCE_NAME -storage $STORAGE -rootfs ${STORAGE}:${DISK_SIZE} -memory $MEMORY -password $PASSWORD -net0 "$NET_CONFIG" -features keyctl=$LXC_KEYCTL -unprivileged $LXC_PRIV
+#    pct create $INSTANCE_ID local:vztmpl/$TEMPLATE -hostname $INSTANCE_NAME -storage $STORAGE -rootfs ${STORAGE}:${DISK_SIZE} -memory $MEMORY -password $PASSWORD -net0 name=eth0,bridge=vmbr0,$NET_CONFIG -features keyctl=$LXC_KEYCTL -unprivileged $LXC_PRIV
+    pct create $INSTANCE_ID local:vztmpl/$TEMPLATE -hostname $INSTANCE_NAME \
+        -storage $STORAGE -rootfs ${STORAGE}:${DISK_SIZE} -memory $MEMORY \
+        -password $PASSWORD -net0 "$NET_CONFIG_LXC" -ipconfig0 "$IP_CONFIG_LXC" \
+        -features keyctl=$LXC_KEYCTL -unprivileged $LXC_PRIV
+
     pct start $INSTANCE_ID
-    whiptail --title "LXC Created" --msgbox "LXC Container $INSTANCE_ID has been created and started!" 8 50
     
     # Ask whether to fetch scripts from GitHub
     USE_GITHUB=$(whiptail --title "External Scripts" --yesno "Do you want to fetch additional scripts from GitHub?" 8 50 3>&1 1>&2 2>&3)
@@ -123,7 +182,7 @@ if [[ "$CHOSEN_TYPE" == "LXC" ]]; then
         done
         fi
 
-        # Run scripts on Proxmox to install into LXC
+        # Run scripts on Proxmox (not inside LXC)
         if [ -d "$EXTERNAL_SCRIPTS_DIR" ] && [ "$(ls -A "$EXTERNAL_SCRIPTS_DIR"/*.sh 2>/dev/null)" ]; then
         for script in "$EXTERNAL_SCRIPTS_DIR"/*.sh; do
         echo "Running $(basename "$script") on Proxmox..."
