@@ -11,8 +11,13 @@ These are very much in early development, and I am not responsible for anything 
 
 ## Currently Available:
 
-### LXC installs:
-Run these to make a highly customizable LXC on Proxmox.
+### Installs:
+Run these to make a highly customizable vm/lxc on Proxmox.
+
+#### AllInstaller:
+```
+https://raw.githubusercontent.com/cindustriesio/lonewolf_scripts/refs/heads/main/proxmox/ultra_scripts/enhanced_vm_lxc_install.sh
+```
 
 #### Debian:
 ```
@@ -25,6 +30,8 @@ bash -c "$(wget -qLO - https://raw.githubusercontent.com/cindustriesio/lonewolf_
 ```
 
 You can inject whatever script at the end to install applications into the newly created LXC. Just copy past the github install script into it.
+
+I have a few available in this repository for testing.
 
 ### LXC update:
 This an update script to select multiple LXCs at once for updating.
