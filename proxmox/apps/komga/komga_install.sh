@@ -1,4 +1,8 @@
 #!/bin/bash
+# Description: Install Komga on Proxmox LXC
+# Version: .1
+# ProjectL: Lonewolf Scripts
+# Created by: Clark Industries IO
 
 # Configuration
 CTID="$1"  # Container ID passed as an argument
