@@ -1,4 +1,4 @@
-#!/bin/bash
+# !/bin/bash
 # Description: Proxmox LXC or VM Creation Script
 # Version: 1.1
 # ProjectL: Lonewolf Scripts

@@ -1,7 +1,7 @@
 # !/bin/bash
 # Description: Proxmox LXC setup script for Debian with optional GitHub script fetching
-# Tested: Proxmox VE 8.0+ (Bookworm)
 # Version: 1.1
+# ProjectL: Lonewolf Scripts
 # Created by: Clark Industries IO
 
 # Check if whiptail is installed
