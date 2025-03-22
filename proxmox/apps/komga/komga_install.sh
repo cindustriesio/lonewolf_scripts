@@ -1,88 +1,82 @@
 #!/bin/bash
-# Description: Install Komga on Proxmox LXC
-# Version: .1
-# ProjectL: Lonewolf Scripts
-# Created by: Clark Industries IO
 
 # Configuration
-CTID="$1"  # Container ID passed as an argument
-CONF_FILE="/etc/pve/lxc/${CTID}.conf"
+LXC_ID="$1"  # LXC Container ID
+INSTALL_DIR="/opt/komga"
+SERVICE_FILE="/etc/systemd/system/komga.service"
+CREDENTIALS_FILE="/root/komga_info.txt"
 
 # Logging Functions
-msg_info() {
-    echo -e "\e[1;34m[INFO]\e[0m $1"
-}
-msg_ok() {
-    echo -e "\e[1;32m[OK]\e[0m $1"
-}
-msg_error() {
-    echo -e "\e[1;31m[ERROR]\e[0m $1"
-}
+msg_info() { echo -e "\e[1;34m[INFO]\e[0m $1"; }
+msg_ok() { echo -e "\e[1;32m[OK]\e[0m $1"; }
+msg_error() { echo -e "\e[1;31m[ERROR]\e[0m $1"; }
 
-# Ensure CTID is provided
-if [[ -z "$CTID" ]]; then
+# Ensure LXC ID is provided
+if [[ -z "$LXC_ID" ]]; then
     msg_error "Usage: $0 <LXC_CONTAINER_ID>"
     exit 1
 fi
 
-# Ensure the LXC container exists
-if [[ ! -f "$CONF_FILE" ]]; then
-    msg_error "LXC container with ID $CTID not found!"
+# Check if LXC exists
+if ! pct list | awk '{print $1}' | grep -q "^$LXC_ID$"; then
+    msg_error "LXC container with ID $LXC_ID not found!"
     exit 1
 fi
 
-msg_info "Updating Container..."
-pct exec "$CTID" -- bash -c "apt update && apt upgrade -y"
+msg_info "Updating LXC container $LXC_ID..."
+pct exec "$LXC_ID" -- bash -c "apt update && apt upgrade -y"
 
-msg_info "Installing Dependencies..."
-pct exec "$CTID" -- bash -c "apt install -y curl wget gnupg software-properties-common"
+msg_info "Installing required dependencies..."
+pct exec "$LXC_ID" -- bash -c "apt install -y openjdk-17-jre wget"
 
-msg_info "Installing Docker & Docker-Compose..."
-pct exec "$CTID" -- bash -c "apt install -y docker.io docker-compose"
-pct exec "$CTID" -- bash -c "systemctl enable --now docker"
+msg_info "Creating Komga user and directories..."
+pct exec "$LXC_ID" -- bash -c "useradd -r -s /bin/false komga || true"
+pct exec "$LXC_ID" -- bash -c "mkdir -p '$INSTALL_DIR/config' '$INSTALL_DIR/books'"
+pct exec "$LXC_ID" -- bash -c "chown -R komga:komga '$INSTALL_DIR'"
 
-msg_info "Creating Komga Directory..."
-pct exec "$CTID" -- bash -c "mkdir -p /opt/komga && cd /opt/komga"
-pct exec "$CTID" -- bash -c "mkdir -p /mnt/media"  # Directory for comics/manga
+msg_info "Downloading latest Komga JAR..."
+pct exec "$LXC_ID" -- bash -c "wget -O '$INSTALL_DIR/komga.jar' https://github.com/gotson/komga/releases/latest/download/komga.jar"
+pct exec "$LXC_ID" -- bash -c "chown komga:komga '$INSTALL_DIR/komga.jar'"
 
-msg_info "Setting Up Docker-Compose File..."
-pct exec "$CTID" -- bash -c "cat <<EOF > /opt/komga/docker-compose.yml
-version: '3'
-services:
-  komga:
-    image: gotson/komga:latest
-    container_name: komga
-    restart: unless-stopped
-    ports:
-      - '25600:25600'
-    volumes:
-      - ./config:/config
-      - /mnt/media:/books
-    environment:
-      - TZ=\$(cat /etc/timezone)
+msg_info "Creating systemd service..."
+pct exec "$LXC_ID" -- bash -c "cat <<EOF > '$SERVICE_FILE'
+[Unit]
+Description=Komga Server
+After=network.target
+
+[Service]
+User=komga
+Group=komga
+WorkingDirectory=$INSTALL_DIR
+ExecStart=/usr/bin/java -jar $INSTALL_DIR/komga.jar
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
 EOF"
 
-msg_info "Starting Komga..."
-pct exec "$CTID" -- bash -c "cd /opt/komga && docker-compose up -d"
+pct exec "$LXC_ID" -- bash -c "systemctl daemon-reload && systemctl enable --now komga"
 
-msg_info "Storing Info in /root/komga_credentials.txt..."
-pct exec "$CTID" -- bash -c "cat <<EOF > /root/komga_credentials.txt
-Komga Installation Info:
-------------------------
-Access Komga at: http://\$(hostname -I | awk '{print $1}'):25600
+msg_info "Retrieving LXC IP Address..."
+LXC_IP=$(pct exec "$LXC_ID" -- hostname -I | awk '{print $1}')
 
-Default Login:
-- Username: admin
-- Password: (Set on first login)
+msg_info "Storing access info in $CREDENTIALS_FILE..."
+pct exec "$LXC_ID" -- bash -c "cat <<EOF > '$CREDENTIALS_FILE'
+Komga Server Installation Info:
+----------------------------------
+Access URL: http://$LXC_IP:25600
 
-Media Directory:
-- /mnt/media (Mount or add your comics/manga here)
+Komga runs as a systemd service.
+To check status: systemctl status komga
+To restart: systemctl restart komga
 
 EOF"
 
-pct exec "$CTID" -- bash -c "chmod 600 /root/komga_credentials.txt"
+pct exec "$LXC_ID" -- bash -c "chmod 600 '$CREDENTIALS_FILE'"
 
-msg_ok "Komga Installation Complete!"
-msg_info "You can access Komga at http://<LXC_IP>:25600"
-msg_info "Default admin login is created on first access."
-msg_info "Check /root/komga_credentials.txt for details."
+msg_ok "Komga installation complete!"
+msg_info "Access Komga at http://$LXC_IP:25600"
+msg_info "Systemd service 'komga' is running."
+msg_info "Credentials stored in $CREDENTIALS_FILE"
+
