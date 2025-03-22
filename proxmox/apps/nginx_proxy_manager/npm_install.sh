@@ -3,7 +3,6 @@
 # Version: .1
 # ProjectL: Lonewolf Scripts
 # Created by: Clark Industries IO
-#!/bin/bash
 
 # Configuration
 CTID="$1"  # Container ID passed as an argument

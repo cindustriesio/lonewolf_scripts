@@ -5,7 +5,11 @@ They are made for Proxmox!
 
 They are open and available for review, everything is as simple as they need to be to run successfully. I try to make comments on every section within a code block, in order to make it easier to follow for less technical users.
 
-Run Everything with: bash -c "$(wget -qLO - https://lonewolfscripts.com)"
+## Basic Run Commands
+Run LXC or VM Creation with: ```bash -c "$(wget -qLO - https://lonewolfscripts.com)"```
+
+Run Install scripts alone with: ```wget -qO- "https://lonewolfscripts.com" | bash -s -- <LXC_ID>```
+
 
 These are very much in early development, and I am not responsible for anything breaking. Use at your own risk!
 
