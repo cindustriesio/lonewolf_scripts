@@ -13,6 +13,55 @@ log() {
     echo "$(date +"%Y-%m-%d %H:%M:%S") - $1" | tee -a "$LOG_FILE"
 }
 
+# Function to install Docker if not installed
+install_docker() {
+    if ! command -v docker &> /dev/null; then
+        log "Docker not found. Installing..."
+
+        # Install dependencies
+        apt-get update && apt-get install -y \
+            ca-certificates \
+            curl \
+            gnupg \
+            lsb-release \
+            apt-transport-https \
+            software-properties-common
+
+        # Add Docker's official GPG key
+        curl -fsSL https://download.docker.com/linux/debian/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null
+        chmod a+r /etc/apt/keyrings/docker.asc
+
+        # Add Docker repository
+        echo \
+            "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+            $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+        apt-get update && apt-get install -y \
+            docker-ce \
+            docker-ce-cli \
+            containerd.io \
+            docker-buildx-plugin \
+            docker-compose-plugin
+
+        systemctl enable --now docker
+
+        if command -v docker &> /dev/null; then
+            log "Docker installed successfully."
+        else
+            log "Docker installation failed! Check logs for details."
+            exit 1
+        fi
+    else
+        log "Docker is already installed."
+    fi
+}
+
+# Ensure whiptail is installed
+if ! command -v whiptail &> /dev/null; then
+    log "whiptail not found. Installing..."
+    apt-get update && apt-get install -y whiptail
+fi
+
 # Function to create Docker network if it doesn't exist
 setup_network() {
     if ! docker network inspect "$DOCKER_NETWORK" >/dev/null 2>&1; then
@@ -46,7 +95,7 @@ install_arr_app() {
     local port=$4
 
     log "Installing $app_name..."
-    
+
     docker run -d \
         --name "$container_name" \
         --network="$DOCKER_NETWORK" \
@@ -59,7 +108,7 @@ install_arr_app() {
     if [ $? -eq 0 ]; then
         log "$app_name installed successfully."
     else
-        log "Failed to install $app_name."
+        log "Failed to install $app_name. Check $LOG_FILE for details."
     fi
 }
 
@@ -76,28 +125,19 @@ select_apps() {
         "8" "Qbittorrent" OFF
         "9" "Jackett" OFF
         "10" "Mylar3" OFF
-        "11" "Overseerr" OFF
-        "12" "Ombi" OFF
-        "13" "Tautulli" OFF
-        "14" "Medusa" OFF
-        "15" "Nefarious" OFF
-        "16" "LazyLibrarian" OFF
-        "17" "Headphones" OFF
-        "18" "SickChill" OFF
-        "19" "Watcher" OFF
-        "20" "FlareSolverr" OFF
-        "21" "Byparr" OFF
-        "22" "Checkrr" OFF
-        "23" "CloudSeeder" OFF
-        "24" "Unpackerr" OFF
-        "25" "Gaps" OFF
-        "26" "Sickbeard MP4 Automator" OFF
-        "27" "theme.park" OFF
-        "28" "Flemarr" OFF
-        "29" "Buildarr" OFF
+        "11" "Transmission" OFF
+        "12" "Deluge" OFF
+        "13" "Flexget" OFF
+        "14" "LazyLibrarian" OFF
+        "15" "Lidarr" OFF
+        "16" "Medusa" OFF
+        "17" "CouchPotato" OFF
+        "18" "Tautulli" OFF
+        "19" "Ombi" OFF
+        "20" "FileBot" OFF
     )
 
-    SELECTED=$(whiptail --checklist "Select *arr apps to install:" 25 80 15 "${OPTIONS[@]}" 3>&1 1>&2 2>&3)
+    SELECTED=$(whiptail --checklist "Select *arr apps to install:" 25 80 20 "${OPTIONS[@]}" 3>&1 1>&2 2>&3)
 
     for choice in $SELECTED; do
         case $choice in
@@ -111,23 +151,23 @@ select_apps() {
             "8") install_arr_app "Qbittorrent" "qbittorrent" "lscr.io/linuxserver/qbittorrent" 8080 ;;
             "9") install_arr_app "Jackett" "jackett" "lscr.io/linuxserver/jackett" 9117 ;;
             "10") install_arr_app "Mylar3" "mylar3" "lscr.io/linuxserver/mylar3" 8090 ;;
-            "11") install_arr_app "Overseerr" "overseerr" "lscr.io/linuxserver/overseerr" 5055 ;;
-            "12") install_arr_app "Ombi" "ombi" "lscr.io/linuxserver/ombi" 3579 ;;
-            "13") install_arr_app "Tautulli" "tautulli" "lscr.io/linuxserver/tautulli" 8181 ;;
-            "14") install_arr_app "Medusa" "medusa" "lscr.io/linuxserver/medusa" 8081 ;;
-            "15") install_arr_app "Nefarious" "nefarious" "lscr.io/linuxserver/nefarious" 8085 ;;
-            "16") install_arr_app "LazyLibrarian" "lazylibrarian" "lscr.io/linuxserver/lazylibrarian" 5299 ;;
-            "17") install_arr_app "Headphones" "headphones" "lscr.io/linuxserver/headphones" 8181 ;;
-            "18") install_arr_app "SickChill" "sickchill" "lscr.io/linuxserver/sickchill" 8081 ;;
-            "19") install_arr_app "Watcher" "watcher" "lscr.io/linuxserver/watcher" 9090 ;;
-            "20") install_arr_app "FlareSolverr" "flaresolverr" "lscr.io/linuxserver/flaresolverr" 8191 ;;
-            "21") install_arr_app "Byparr" "byparr" "ghcr.io/byparr/byparr" 8191 ;;
+            "11") install_arr_app "Transmission" "transmission" "lscr.io/linuxserver/transmission" 9091 ;;
+            "12") install_arr_app "Deluge" "deluge" "lscr.io/linuxserver/deluge" 8112 ;;
+            "13") install_arr_app "Flexget" "flexget" "flexget/flexget" 5050 ;;
+            "14") install_arr_app "LazyLibrarian" "lazylibrarian" "lscr.io/linuxserver/lazylibrarian" 5299 ;;
+            "15") install_arr_app "Lidarr" "lidarr" "lscr.io/linuxserver/lidarr" 8686 ;;
+            "16") install_arr_app "Medusa" "medusa" "lscr.io/linuxserver/medusa" 8081 ;;
+            "17") install_arr_app "CouchPotato" "couchpotato" "lscr.io/linuxserver/couchpotato" 5050 ;;
+            "18") install_arr_app "Tautulli" "tautulli" "lscr.io/linuxserver/tautulli" 8181 ;;
+            "19") install_arr_app "Ombi" "ombi" "lscr.io/linuxserver/ombi" 5000 ;;
+            "20") install_arr_app "FileBot" "filebot" "lscr.io/linuxserver/filebot" 8080 ;;
         esac
     done
 }
 
 # Main script execution
 log "Starting *arr installation process..."
+install_docker
 setup_storage
 setup_network
 setup_vpn
