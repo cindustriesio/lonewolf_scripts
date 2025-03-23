@@ -21,7 +21,7 @@ if ! pct list | grep -q "^ *$LXC_ID"; then
 fi
 
 # Run commands inside LXC
-pct exec $LXC_ID -- bash -c "\
+pct exec $LXC_ID -- bash -c "
     apt update && apt install -y curl openjdk-17-jre && \
     useradd -r -s /bin/false $USER || true && \
     mkdir -p $INSTALL_DIR && chown $USER:$USER $INSTALL_DIR && \
@@ -33,24 +33,23 @@ pct exec $LXC_ID -- bash -c "\
     FILE_SIZE=\$(stat -c %s $INSTALL_DIR/komga.jar) && \
     if [[ \$FILE_SIZE -lt 1000000 ]]; then echo \"[ERROR] Downloaded file is too small, possibly corrupted!\"; exit 1; fi && \
     chown $USER:$USER $INSTALL_DIR/komga.jar && chmod 755 $INSTALL_DIR/komga.jar && \
-    cat > $SERVICE_FILE <<EOF
-[Unit]
-Description=Komga Server
-After=network.target
-
-[Service]
-User=$USER
-Group=$USER
-WorkingDirectory=$INSTALL_DIR
-ExecStart=/usr/bin/java -jar $INSTALL_DIR/komga.jar --server.address=0.0.0.0
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-EOF
+    echo '[Unit]' > $SERVICE_FILE && \
+    echo 'Description=Komga Server' >> $SERVICE_FILE && \
+    echo 'After=network.target' >> $SERVICE_FILE && \
+    echo '' >> $SERVICE_FILE && \
+    echo '[Service]' >> $SERVICE_FILE && \
+    echo 'User=$USER' >> $SERVICE_FILE && \
+    echo 'Group=$USER' >> $SERVICE_FILE && \
+    echo 'WorkingDirectory=$INSTALL_DIR' >> $SERVICE_FILE && \
+    echo 'ExecStart=/usr/bin/java -jar $INSTALL_DIR/komga.jar --server.address=0.0.0.0' >> $SERVICE_FILE && \
+    echo 'Restart=always' >> $SERVICE_FILE && \
+    echo 'RestartSec=10' >> $SERVICE_FILE && \
+    echo '' >> $SERVICE_FILE && \
+    echo '[Install]' >> $SERVICE_FILE && \
+    echo 'WantedBy=multi-user.target' >> $SERVICE_FILE && \
     systemctl daemon-reload && systemctl enable --now komga
 "
 
 echo "Komga installation in LXC $LXC_ID completed successfully!"
+
 echo "Access Komga at http://<LXC_IP>:25600"
