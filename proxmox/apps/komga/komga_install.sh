@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # LXC Configuration
 LXC_ID="$1"  # LXC Container ID
 INSTALL_DIR="/opt/komga"
@@ -51,3 +53,4 @@ EOF
 "
 
 echo "Komga installation in LXC $LXC_ID completed successfully!"
+echo "Access Komga at http://<LXC_IP>:25600"
