@@ -1,10 +1,15 @@
 #!/bin/bash
 
-# LXC Configuration
+# Configuration
 LXC_ID="$1"  # LXC Container ID
 INSTALL_DIR="/opt/komga"
-USER="komga"
 SERVICE_FILE="/etc/systemd/system/komga.service"
+CREDENTIALS_FILE="/root/komga_info.txt"
+
+# Logging Functions
+msg_info() { echo -e "\e[1;34m[INFO]\e[0m $1"; }
+msg_ok() { echo -e "\e[1;32m[OK]\e[0m $1"; }
+msg_error() { echo -e "\e[1;31m[ERROR]\e[0m $1"; }
 
 # Ensure LXC ID is provided
 if [[ -z "$LXC_ID" ]]; then
@@ -12,39 +17,65 @@ if [[ -z "$LXC_ID" ]]; then
     exit 1
 fi
 
-# Ensure the LXC exists
-if ! pct list | grep -q "^ *$LXC_ID"; then
-    echo "[ERROR] LXC $LXC_ID does not exist. Please create it first."
+# Check if LXC exists
+if ! pct list | awk '{print $1}' | grep -q "^$LXC_ID$"; then
+    msg_error "LXC container with ID $LXC_ID not found!"
     exit 1
 fi
 
-# Run commands inside LXC
-pct exec $LXC_ID -- bash -c "\
-    apt update && apt install -y curl openjdk-17-jre && \
-    useradd -r -s /bin/false $USER || true && \
-    mkdir -p $INSTALL_DIR && chown $USER:$USER $INSTALL_DIR && \
-    LATEST_VERSION=\$(curl -sL https://github.com/gotson/komga/releases/latest | grep -oE 'tag/v[0-9.]+' | head -n1 | cut -d'v' -f2) && \
-    if [[ -z \"\$LATEST_VERSION\" ]]; then echo \"[ERROR] Failed to fetch Komga version!\"; exit 1; fi && \
-    DOWNLOAD_URL=\"https://github.com/gotson/komga/releases/download/v\$LATEST_VERSION/komga-\$LATEST_VERSION.jar\" && \
-    curl -Lo $INSTALL_DIR/komga.jar \$DOWNLOAD_URL && \
-    chown $USER:$USER $INSTALL_DIR/komga.jar && chmod 755 $INSTALL_DIR/komga.jar && \
-    cat > $SERVICE_FILE <<EOF
+msg_info "Updating LXC container $LXC_ID..."
+pct exec "$LXC_ID" -- bash -c "apt update && apt upgrade -y"
+
+msg_info "Installing required dependencies..."
+pct exec "$LXC_ID" -- bash -c "apt install -y openjdk-17-jre wget"
+
+msg_info "Creating Komga user and directories..."
+pct exec "$LXC_ID" -- bash -c "useradd -r -s /bin/false komga || true"
+pct exec "$LXC_ID" -- bash -c "mkdir -p '$INSTALL_DIR/config' '$INSTALL_DIR/books'"
+pct exec "$LXC_ID" -- bash -c "chown -R komga:komga '$INSTALL_DIR'"
+
+msg_info "Downloading latest Komga JAR..."
+pct exec "$LXC_ID" -- bash -c "wget -O '$INSTALL_DIR/komga.jar' https://github.com/gotson/komga/releases/latest/download/komga.jar"
+pct exec "$LXC_ID" -- bash -c "chown komga:komga '$INSTALL_DIR/komga.jar'"
+
+msg_info "Creating systemd service..."
+pct exec "$LXC_ID" -- bash -c "cat <<EOF > '$SERVICE_FILE'
 [Unit]
 Description=Komga Server
 After=network.target
 
 [Service]
-User=$USER
-Group=$USER
+User=komga
+Group=komga
 WorkingDirectory=$INSTALL_DIR
-ExecStart=/usr/bin/java -jar $INSTALL_DIR/komga.jar --server.address=0.0.0.0
+ExecStart=/usr/bin/java -jar $INSTALL_DIR/komga.jar
 Restart=always
 RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
-EOF
-    systemctl daemon-reload && systemctl enable --now komga
-"
+EOF"
 
-echo "Komga installation in LXC $LXC_ID completed successfully!"
+pct exec "$LXC_ID" -- bash -c "systemctl daemon-reload && systemctl enable --now komga"
+
+msg_info "Retrieving LXC IP Address..."
+LXC_IP=$(pct exec "$LXC_ID" -- hostname -I | awk '{print $1}')
+
+msg_info "Storing access info in $CREDENTIALS_FILE..."
+pct exec "$LXC_ID" -- bash -c "cat <<EOF > '$CREDENTIALS_FILE'
+Komga Server Installation Info:
+----------------------------------
+Access URL: http://$LXC_IP:25600
+
+Komga runs as a systemd service.
+To check status: systemctl status komga
+To restart: systemctl restart komga
+
+EOF"
+
+pct exec "$LXC_ID" -- bash -c "chmod 600 '$CREDENTIALS_FILE'"
+
+msg_ok "Komga installation complete!"
+msg_info "Access Komga at http://$LXC_IP:25600"
+msg_info "Systemd service 'komga' is running."
+msg_info "Credentials stored in $CREDENTIALS_FILE"
