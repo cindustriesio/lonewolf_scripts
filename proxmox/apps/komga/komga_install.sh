@@ -56,7 +56,7 @@ msg_info "Creating systemd service..."
 pct exec "$LXC_ID" -- bash -c "cat <<EOF > '$SERVICE_FILE'
 [Unit]
 Description=Komga Server
-After=network.target
+After=syslog.target network.target
 
 [Service]
 User=komga
