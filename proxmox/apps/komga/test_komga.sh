@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 # LXC Configuration
 LXC_ID="$1"  # LXC Container ID
 INSTALL_DIR="/opt/komga"
