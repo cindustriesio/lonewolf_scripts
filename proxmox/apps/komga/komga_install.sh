@@ -8,7 +8,7 @@ SERVICE_FILE="/etc/systemd/system/komga.service"
 
 # Ensure LXC ID is provided
 if [[ -z "$LXC_ID" ]]; then
-    msg_error "Usage: $0 <LXC_CONTAINER_ID>"
+    echo "[ERROR] Usage: $0 <LXC_CONTAINER_ID>"
     exit 1
 fi
 
@@ -23,10 +23,13 @@ pct exec $LXC_ID -- bash -c "\
     apt update && apt install -y curl openjdk-17-jre && \
     useradd -r -s /bin/false $USER || true && \
     mkdir -p $INSTALL_DIR && chown $USER:$USER $INSTALL_DIR && \
-    LATEST_VERSION=\$(curl -sL https://github.com/gotson/komga/releases/latest | grep -oE 'tag/v[0-9.]+' | head -n1 | cut -d'v' -f2) && \
+    LATEST_VERSION=\$(curl -s https://api.github.com/repos/gotson/komga/releases/latest | grep 'tag_name' | cut -d '"' -f4 | sed 's/v//') && \
     if [[ -z \"\$LATEST_VERSION\" ]]; then echo \"[ERROR] Failed to fetch Komga version!\"; exit 1; fi && \
     DOWNLOAD_URL=\"https://github.com/gotson/komga/releases/download/v\$LATEST_VERSION/komga-\$LATEST_VERSION.jar\" && \
-    curl -Lo $INSTALL_DIR/komga.jar \$DOWNLOAD_URL && \
+    echo \"Downloading Komga v\$LATEST_VERSION...\" && \
+    curl -Lo $INSTALL_DIR/komga.jar \$DOWNLOAD_URL || { echo \"[ERROR] Download failed!\"; exit 1; } && \
+    FILE_SIZE=\$(stat -c %s $INSTALL_DIR/komga.jar) && \
+    if [[ \$FILE_SIZE -lt 1000000 ]]; then echo \"[ERROR] Downloaded file is too small, possibly corrupted!\"; exit 1; fi && \
     chown $USER:$USER $INSTALL_DIR/komga.jar && chmod 755 $INSTALL_DIR/komga.jar && \
     cat > $SERVICE_FILE <<EOF
 [Unit]
