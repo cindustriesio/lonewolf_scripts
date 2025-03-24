@@ -58,11 +58,6 @@ if [[ "$CHOSEN_TYPE" == "VM" ]]; then
     whiptail --title "Custom Configuration: Part 2" --msgbox "$CHOSEN_TYPE Specifc Configuration Settings, Please Contiune." 8 50
     if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
     # Get ISO Images
-#    ISO_IMAGES=$(ls /var/lib/vz/template/iso | xargs)
-#    DEFAULT_ISO=$(echo "$ISO_IMAGES" | awk '{print $1}')
-#    ISO=$(whiptail --menu "Select ISO Image:" 15 60 5 $(for i in $ISO_IMAGES; do echo "$i [_]"; done) --default-item "$DEFAULT_ISO" 3>&1 1>&2 2>&3)
-#    if [[ $? -ne 0 ]]; then { echo "User cancelled. Exiting..."; exit 1; } fi
-# New Test
     ISO_STORAGE_PATH="/var/lib/vz/template/iso"
     mkdir -p "$ISO_STORAGE_PATH"
 
