@@ -41,7 +41,7 @@ if [[ ! -f "$CONF_FILE" ]]; then
 fi
 
 # Check if user still wants to install app
-whiptail --title "Confirm Install" --yesno "Confirm you wish to install Plex in $CT_ID?" 15 50
+whiptail --title "Confirm Install" --yesno "Confirm you wish to install Plex in $CTID?" 15 50
 if [ $? -ne 0 ]; then
     echo "Aborted."
     exit 1
