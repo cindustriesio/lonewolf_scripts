@@ -33,7 +33,7 @@ bash -c "$(wget -qLO - https://raw.githubusercontent.com/cindustriesio/lonewolf_
 bash -c "$(wget -qLO - https://raw.githubusercontent.com/cindustriesio/lonewolf_scripts/refs/heads/main/proxmox/lxc/ubuntu_lxc_git.sh)"
 ```
 
-You can inject whatever script at the end to install applications into the newly created LXC. Just copy past the github install script into it.
+You can inject whatever script at the end to install applications into the newly created LXC. Just copy paste the github install script into it.
 
 I have a few available in this repository for testing.
 
