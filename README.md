@@ -44,9 +44,9 @@ bash -c "$(wget -qLO - https://raw.githubusercontent.com/cindustriesio/lonewolf_
 
 Any questions or comments just ask! I am new to git and coding in general, and this is a learning experience while trying to help the community.
 
-## Lonewolf:wolf: Apps
+## Lonewolf :wolf: Apps
 If you are intrested in some other projects, check out [lonewolf_apps](https://github.com/cindustriesio/lonewolf_apps). 
-I am curently working on a few encryption:closed_lock_with_key: apps, will be publishing some in the new future so be sure to save for later!
+I am curently working on a few encryption :closed_lock_with_key: apps, will be publishing some in the new future so be sure to save for later!
 
 #### :wolf: Contribute :wolf:
 I welcome more contributors, this is becoming a large scope project...
