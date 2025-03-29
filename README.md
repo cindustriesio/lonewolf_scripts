@@ -35,7 +35,7 @@ bash -c "$(wget -qLO - https://raw.githubusercontent.com/cindustriesio/lonewolf_
 
 You can inject whatever script at the end to install applications into the newly created LXC. Just copy paste the github install script into it.
 
-I have a few available in this repository for testing.
+I have a few available in this repository```https://github.com/cindustriesio/lonewolf_scripts/proxmox/apps``` for testing.
 
 ### LXC update:
 This an update script to select multiple LXCs at once for updating.
