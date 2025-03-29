@@ -1,17 +1,16 @@
 # lonewolf_scripts :wolf:
 
-These scripts are stand alone and are designed to be that way.
-They are made for Proxmox!
+Proxmox scripts designed to be ran as a standalone script. Just run and done.
+You can run the app install scripts as standlone as well. Keep reading to learn more!
 
-They are open and available for review, everything is as simple as they need to be to run successfully. I try to make comments on every section within a code block, in order to make it easier to follow for less technical users.
+The scripts are open and available for review, everything is as simple as they need to be. I try to make comments on every section within a code block, in order to make it easier to follow for less technical users.
+These are very much in early development, and I am not responsible for anything breaking. Use at your own risk!
 
 ## Basic Run Commands
 Run LXC or VM Creation with: ```bash -c "$(wget -qLO - https://lonewolfscripts.com)"```
 
 Run Install scripts alone with: ```wget -qO- "https://lonewolfscripts.com" | bash -s -- <LXC_ID>```
 
-
-These are very much in early development, and I am not responsible for anything breaking. Use at your own risk!
 
 ## Currently Available:
 
@@ -43,7 +42,11 @@ This an update script to select multiple LXCs at once for updating.
 bash -c "$(wget -qLO - https://raw.githubusercontent.com/cindustriesio/lonewolf_scripts/refs/heads/main/proxmox/lxc/lxc_update_selectable.sh)"
 ```
 
-Any questions or comments just ask! I am new to git, and this is a learning experience while trying to help the community.
+Any questions or comments just ask! I am new to git and coding in general, and this is a learning experience while trying to help the community.
+
+## Lonewolf:wolf: Apps
+If you are intrested in some other projects, check out [lonewolf_apps](https://github.com/cindustriesio/lonewolf_apps). 
+I am curently working on a few encryption:closed_lock_with_key: apps, will be publishing some in the new future so be sure to save for later!
 
 #### :wolf: Contribute :wolf:
 I welcome more contributors, this is becoming a large scope project...
