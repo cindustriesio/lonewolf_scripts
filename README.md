@@ -1,4 +1,4 @@
-# lonewolf_scripts
+# lonewolf_scripts :wolf:
 
 These scripts are stand alone and are designed to be that way.
 They are made for Proxmox!
@@ -45,6 +45,6 @@ bash -c "$(wget -qLO - https://raw.githubusercontent.com/cindustriesio/lonewolf_
 
 Any questions or comments just ask! I am new to git, and this is a learning experience while trying to help the community.
 
-#### Contribute
+#### :wolf: Contribute :wolf:
 I welcome more contributors, this is becoming a large scope project...
 If you want to help out with alternative methods, consider a [donation](https://ko-fi.com/technaut951)! I work on these when I have time, so updates will come out sproadically.
