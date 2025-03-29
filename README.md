@@ -1,6 +1,6 @@
 # lonewolf_scripts :wolf:
 
-Proxmox scripts designed to be ran as a standalone script. Just run and done.
+Proxmox scripts designed to be ran as a standalone script. Just run through the customizable script and done.
 You can run the app install scripts as standlone as well. Keep reading to learn more!
 
 The scripts are open and available for review, everything is as simple as they need to be. I try to make comments on every section within a code block, in order to make it easier to follow for less technical users.
